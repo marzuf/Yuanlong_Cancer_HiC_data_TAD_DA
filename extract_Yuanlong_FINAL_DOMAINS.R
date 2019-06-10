@@ -1,4 +1,6 @@
 
+# Rscript extract_Yuanlong_FINAL_DOMAINS.R
+
 script_name <- "extract_Yuanlong_FINAL_DOMAINS.R"
 startTime <- Sys.time()
 
@@ -22,13 +24,13 @@ allData <- eval(parse(text = load(allData_file)))
 cancerDS <- names(allData)[grep("^mega_", names(allData))]
 
 ds = cancerDS[1]
-cancerDS=cancerDS[1]
+# cancerDS=cancerDS[1]
 foo <- foreach(ds = cancerDS) %dopar% {
   
   cat(paste0("... start DS: ", ds, "\n"))
   
   folderName <- gsub("^mega_", "", ds) 
-  outFolder <- file.path(folderName, "FINAL_DOMAINS")
+  outFolder <- file.path(paste0(folderName, "_",binSizeKb , "kb"), "FINAL_DOMAINS")
   dir.create(outFolder, recursive = TRUE)
   
   allChr_tad_DT <- allData[[ds]]
