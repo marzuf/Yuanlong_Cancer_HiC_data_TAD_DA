@@ -61,11 +61,16 @@ pipOutFolder <- file.path("PIPELINE", "OUTPUT_FOLDER")
 
 all_hicexpr_ds <- unname(unlist(sapply(list.files(pipOutFolder, full.names = TRUE), 
                                        function(x) file.path(basename(x),  list.files(x)))))
+
+
+all_hicexpr_ds <- list.files(pipOutFolder, recursive = TRUE, pattern="emp_pval_combined.Rdata", full.names = FALSE)
+all_hicexpr_ds <- dirname(dirname(all_hicexpr_ds))
+
 stopifnot(dir.exists(file.path(pipOutFolder, all_hicexpr_ds)))
 
 ds=all_hicexpr_ds[1]
 
-all_hicexpr_ds=all_hicexpr_ds[1]
+# all_hicexpr_ds=all_hicexpr_ds[1]
 
 if(build_signifTADs_allDS_data){
   cat("... start building allPvals_allDS_DT data \n")
@@ -202,6 +207,18 @@ mtext(text=mySub, side=3)
 foo <- dev.off()
 cat(paste0("... written: ", outFile, "\n"))
 
+outFile <- file.path(outFolder, paste0(var2, "_", var1, "_", "log10_densplot.", plotType))
+do.call(plotType, list(outFile,  height=myHeight, width=myWidth))
+densplot(x = -log10(allPvals_allDS_DT[,var1]), 
+         y = -log10(allPvals_allDS_DT[,var2]),
+         main = myTit,
+         xlab = paste0(var1, "[-log10]"),
+         ylab = paste0(var2, "[-log10]"),
+         cex.axis = plotCex, cex.lab=plotCex, cex.main=plotCex)
+mtext(text=mySub, side=3)
+foo <- dev.off()
+cat(paste0("... written: ", outFile, "\n"))
+
 myTit <- paste0("adj. empPval. meanFC vs. adj. empPval. Comb.")
 mySub <- paste0("(nDS = ", length(all_ds), " - YL TADs)")
 var1 <- "adj_pvalComb"
@@ -218,6 +235,18 @@ mtext(text=mySub, side=3)
 foo <- dev.off()
 cat(paste0("... written: ", outFile, "\n"))
   
+outFile <- file.path(outFolder, paste0(var2, "_", var1, "_log10_", "densplot.", plotType))
+do.call(plotType, list(outFile,  height=myHeight, width=myWidth))
+densplot(x = -log10(allPvals_allDS_DT[,var1]), 
+         y = -log10(allPvals_allDS_DT[,var2]),
+         main = myTit,
+         xlab = paste0(var1, "[-log10]"),
+         ylab = paste0(var2, "[-log10]"),
+         cex.axis = plotCex, cex.lab=plotCex, cex.main=plotCex)
+mtext(text=mySub, side=3)
+foo <- dev.off()
+cat(paste0("... written: ", outFile, "\n"))
+
 
 # ######################################################################################
 # ######################################################################################

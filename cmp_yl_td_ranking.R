@@ -32,7 +32,6 @@ myWidth <- 600
 
 axisCex <- 1.2
 
-
 buildTable <- TRUE
 
 # PIPELINE/OUTPUT_FOLDER/ENCSR444WCZ_A549_40kb/TCGAluad_norm_luad/4_runMeanTADCorr/all_meanCorr_TAD.Rdata
@@ -135,7 +134,8 @@ if(buildTable) {
   outFile <- file.path(outFolder, "all_ranks_DT.Rdata")
   all_ranks_DT <- eval(parse(text = load(outFile)))
 }
-  
+
+nDS <- length(unique(paste0(all_ranks_DT$hicds, "_", all_ranks_DT$exprds)))
 
 ### PVAL VS RANK - YL
 myx <-all_ranks_DT$yl_rank 
@@ -151,11 +151,35 @@ densplot(
   cex = 0.7,
   cex.lab = axisCex,
   cex.axis = axisCex
-)  
+)
+mtext(side=3, text = paste0("(nDS = ", nDS, ")"))
 addCorr(x=myx, legPos="topleft",
         y=myy, bty='n')
 foo <- dev.off()
 cat(paste0("... written: ", outFile, "\n"))
+
+
+### log10 PVAL VS RANK - YL
+myx <- all_ranks_DT$yl_rank 
+myy <- log10(all_ranks_DT$yl_adjPvalComb)
+outFile <- file.path(outFolder, paste0("log10pval_vs_rank_ylData.", plotType))
+do.call(plotType, list(outFile, height=myHeight, width=myHeight))
+densplot(
+  x = myx,
+  xlab = paste0("TAD rank"),
+  y = -myy,
+  ylab = paste0("adj. pval. comb. [-log10]"),
+  main = "YL data",
+  cex = 0.7,
+  cex.lab = axisCex,
+  cex.axis = axisCex
+)
+mtext(side=3, text = paste0("(nDS = ", nDS, ")"))
+addCorr(x=myx, legPos="topleft",
+        y=myy, bty='n')
+foo <- dev.off()
+cat(paste0("... written: ", outFile, "\n"))
+
 
 
 ### PVAL VS RANK - TD
@@ -173,10 +197,34 @@ densplot(
   cex.lab = axisCex,
   cex.axis = axisCex
 )  
+mtext(side=3, text = paste0("(nDS = ", nDS, ")"))
 addCorr(x=myx, legPos="topleft",
         y=myy, bty='n')
 foo <- dev.off()
 cat(paste0("... written: ", outFile, "\n"))
+
+
+### log10 PVAL VS RANK - TD
+myx <- all_ranks_DT$td_rank
+myy <- log10(all_ranks_DT$td_adjPvalComb)
+outFile <- file.path(outFolder, paste0("log10pval_vs_rank_tdData.", plotType))
+do.call(plotType, list(outFile, height=myHeight, width=myHeight))
+densplot(
+  x = myx,
+  xlab = paste0("TAD rank"),
+  y = -myy,
+  ylab = paste0("adj. pval. comb. [-log10]"),
+  main = "TD data",
+  cex = 0.7,
+  cex.lab = axisCex,
+  cex.axis = axisCex
+)  
+mtext(side=3, text = paste0("(nDS = ", nDS, ")"))
+addCorr(x=myx, legPos="topleft",
+        y=myy, bty='n')
+foo <- dev.off()
+cat(paste0("... written: ", outFile, "\n"))
+
 
 ### YL VS TD - RANK
 myx <- all_ranks_DT$td_rank
@@ -193,6 +241,7 @@ densplot(
   cex.lab = axisCex,
   cex.axis = axisCex
 )  
+mtext(side=3, text = paste0("(nDS = ", nDS, ")"))
 addCorr(x=myx, legPos="topleft",
         y=myy, bty='n')
 foo <- dev.off()
@@ -213,6 +262,7 @@ densplot(
   cex.lab = axisCex,
   cex.axis = axisCex
 )  
+mtext(side=3, text = paste0("(nDS = ", nDS, ")"))
 addCorr(x=myx, legPos="topleft",
         y=myy, bty='n')
 foo <- dev.off()
@@ -233,13 +283,11 @@ densplot(
   cex.lab = axisCex,
   cex.axis = axisCex
 )  
+mtext(side=3, text = paste0("(nDS = ", nDS, ")"))
 addCorr(x=myx, legPos="topleft",
         y=myy, bty='n')
 foo <- dev.off()
 cat(paste0("... written: ", outFile, "\n"))
-
-
-
 
 
 # # densplot empPvalCombined vs. empPvalIntraCorr - TD
