@@ -32,7 +32,7 @@ plotType <- "png"
 myHeight <- 400
 myWidth <- 600
 
-buildAllData <- TRUE
+buildAllData <- FALSE
 
 # PIPELINE/OUTPUT_FOLDER/ENCSR444WCZ_A549_40kb/TCGAluad_norm_luad/4_runMeanTADCorr/all_meanCorr_TAD.Rdata
 
@@ -483,7 +483,27 @@ cat(paste0("... written: ", outFile, "\n"))
 
 
 
+x_var <- "adjEmpPvalCorr"
+y_var <- "adjEmpPvalFC"
 
+dataSource="td"
+for(dataSource in c("td", "yl")) {
+  myx <- unlist(lapply(all_data, function(x) x[[paste0(dataSource, "_", x_var)]]))
+  myy <- unlist(lapply(all_data, function(x) x[[paste0(dataSource, "_", y_var)]]))
+  
+  outFile <- file.path(outFolder, paste0("all_datasets_", toupper(dataSource), "_", y_var, "_vs_", x_var, "_log10.", plotType))
+  do.call(plotType, list(outFile, height=myHeight, width=myHeight))
+  densplot(
+    x = -log10(myx),
+    y = -log10(myy),
+    xlab = paste0(x_var, " [-log10]") ,
+    ylab = paste0(y_var, " [-log10]") ,
+    main = paste0(y_var, " vs. ", x_var, " - ", toupper(dataSource))
+  )
+  mtext(side=3, text = paste0("(nDS = ", nDS, ")"))
+  foo <- dev.off()
+  cat(paste0("... written: ", outFile, "\n"))
+}
 
 
 txt <- paste0(startTime, "\n", Sys.time(), "\n")

@@ -190,62 +190,141 @@ head(allPvals_allDS_DT)
 
 all_ds <- unique(paste0(allPvals_allDS_DT$hicds, "_", allPvals_allDS_DT$exprds))
 
+
+# ######################################################################################
+# ###################################################################################### ajd pval Comb vs adj pval Corr
+# ###################################################################################### 
+
+
 myTit <- paste0("adj. empPval. meanIntraTADcorr vs. adj. empPval. Comb.")
 mySub <- paste0("(nDS = ", length(all_ds), " - YL TADs)")
 
 var1 <- "adj_pvalComb"
 var2 <- "adj_pvalCorr"
+
+myx <- allPvals_allDS_DT[,var1]
+myy <- allPvals_allDS_DT[,var2]
+
 outFile <- file.path(outFolder, paste0(var2, "_", var1, "_", "densplot.", plotType))
 do.call(plotType, list(outFile,  height=myHeight, width=myWidth))
-densplot(x = allPvals_allDS_DT[,var1], 
-         y = allPvals_allDS_DT[,var2],
+densplot(x = myx,
+         y = myy,
          main = myTit,
          xlab = var1,
          ylab = var2,
          cex.axis = plotCex, cex.lab=plotCex, cex.main=plotCex)
 mtext(text=mySub, side=3)
+addCorr(x=myx, legPos="topleft",
+        y=myy, bty='n')
 foo <- dev.off()
 cat(paste0("... written: ", outFile, "\n"))
 
+myx <- -log10(allPvals_allDS_DT[,var1])
+myy <- -log10(allPvals_allDS_DT[,var2])
+
 outFile <- file.path(outFolder, paste0(var2, "_", var1, "_", "log10_densplot.", plotType))
 do.call(plotType, list(outFile,  height=myHeight, width=myWidth))
-densplot(x = -log10(allPvals_allDS_DT[,var1]), 
-         y = -log10(allPvals_allDS_DT[,var2]),
+densplot(x = myx,
+         y = myy,
          main = myTit,
          xlab = paste0(var1, "[-log10]"),
          ylab = paste0(var2, "[-log10]"),
          cex.axis = plotCex, cex.lab=plotCex, cex.main=plotCex)
 mtext(text=mySub, side=3)
+addCorr(x=myx, legPos="topleft",
+        y=myy, bty='n')
 foo <- dev.off()
 cat(paste0("... written: ", outFile, "\n"))
+
+# ######################################################################################
+# ######################################################################################  ajd pval Corr vs adj pval FC
+# ###################################################################################### 
+
+myTit <- paste0("adj. empPval. meanFC vs. adj. empPval. meanIntraTADcorr")
+mySub <- paste0("(nDS = ", length(all_ds), " - YL TADs)")
+var1 <- "adj_pvalCorr"
+var2 <- "adj_pvalFC"
+
+myx <- (allPvals_allDS_DT[,var1])
+myy <- (allPvals_allDS_DT[,var2])
+
+outFile <- file.path(outFolder, paste0(var2, "_", var1, "_", "densplot.", plotType))
+do.call(plotType, list(outFile,  height=myHeight, width=myWidth))
+densplot(x = myx,
+         y = myy,
+         main = myTit,
+         xlab = var1,
+         ylab = var2,
+         cex.axis = plotCex, cex.lab=plotCex, cex.main=plotCex)
+mtext(text=mySub, side=3)
+addCorr(x=myx, legPos="topleft",
+        y=myy, bty='n')
+foo <- dev.off()
+cat(paste0("... written: ", outFile, "\n"))
+  
+myx <- -log10(allPvals_allDS_DT[,var1])
+myy <- -log10(allPvals_allDS_DT[,var2])
+
+
+outFile <- file.path(outFolder, paste0(var2, "_", var1, "_log10_", "densplot.", plotType))
+do.call(plotType, list(outFile,  height=myHeight, width=myWidth))
+densplot(x = myx,
+         y = myy,
+         main = myTit,
+         xlab = paste0(var1, "[-log10]"),
+         ylab = paste0(var2, "[-log10]"),
+         cex.axis = plotCex, cex.lab=plotCex, cex.main=plotCex)
+mtext(text=mySub, side=3)
+addCorr(x=myx, legPos="topleft",
+        y=myy, bty='n')
+foo <- dev.off()
+cat(paste0("... written: ", outFile, "\n"))
+
+
+# ######################################################################################
+# ###################################################################################### ajd pval Comb vs adj pval FC
+# ###################################################################################### 
 
 myTit <- paste0("adj. empPval. meanFC vs. adj. empPval. Comb.")
 mySub <- paste0("(nDS = ", length(all_ds), " - YL TADs)")
 var1 <- "adj_pvalComb"
 var2 <- "adj_pvalFC"
+
+myx <- (allPvals_allDS_DT[,var1])
+myy <- (allPvals_allDS_DT[,var2])
+
 outFile <- file.path(outFolder, paste0(var2, "_", var1, "_", "densplot.", plotType))
 do.call(plotType, list(outFile,  height=myHeight, width=myWidth))
-densplot(x = allPvals_allDS_DT[,var1], 
-         y = allPvals_allDS_DT[,var2],
+densplot(x = myx,
+         y = myy,
          main = myTit,
          xlab = var1,
          ylab = var2,
          cex.axis = plotCex, cex.lab=plotCex, cex.main=plotCex)
 mtext(text=mySub, side=3)
+addCorr(x=myx, legPos="topleft",
+        y=myy, bty='n')
 foo <- dev.off()
 cat(paste0("... written: ", outFile, "\n"))
-  
+
+myx <- -log10(allPvals_allDS_DT[,var1])
+myy <- -log10(allPvals_allDS_DT[,var2])
+
+
 outFile <- file.path(outFolder, paste0(var2, "_", var1, "_log10_", "densplot.", plotType))
 do.call(plotType, list(outFile,  height=myHeight, width=myWidth))
-densplot(x = -log10(allPvals_allDS_DT[,var1]), 
-         y = -log10(allPvals_allDS_DT[,var2]),
+densplot(x = myx,
+         y = myy,
          main = myTit,
          xlab = paste0(var1, "[-log10]"),
          ylab = paste0(var2, "[-log10]"),
          cex.axis = plotCex, cex.lab=plotCex, cex.main=plotCex)
 mtext(text=mySub, side=3)
+addCorr(x=myx, legPos="topleft",
+        y=myy, bty='n')
 foo <- dev.off()
 cat(paste0("... written: ", outFile, "\n"))
+
 
 
 # ######################################################################################
