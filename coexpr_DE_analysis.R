@@ -45,6 +45,9 @@ dataFile <- file.path(dataFolder, "allData_within_between_coexpr.Rdata")
 stopifnot(file.exists(dataFile))
 allData_within_between_coexpr <- eval(parse(text = load(dataFile)))
 
+
+all_domainScore_files <- list.files(".", recursive = TRUE, pattern="_final_domains_withScore.txt", full.names = FALSE)
+stopifnot(length(all_domainScore_files) > 0)
   
 # sort the TADs by decreasing withinCoexpr
 # plot level of coexpr within and between on the same plot
@@ -89,6 +92,20 @@ tad_coexpr_DT <- data.frame(
 )
 tad_coexpr_DT <- tad_coexpr_DT[order(tad_coexpr_DT$withinCoexpr, decreasing = TRUE),]
 tad_coexpr_DT$TADrank <- 1:nrow(tad_coexpr_DT)
+
+
+### BUILD THE CPTMT SCORE TABLE
+score_file = all_domainScore_files[1]
+score_DT <- foreach(score_file = all_domainScore_files, .combine = 'rbind') %dopar% {
+  curr_file <- file.path(score_file)
+  stopifnot(file.exists(curr_file))
+  curr_DT <- read.delim(curr_file, header=F, 
+                        col.names = c("chromo", "start", "end", "region", "score"))
+  curr_DT$dataset <- dirname(dirname(curr_file))
+  curr_DT
+}
+
+
 
 
 ### BUILD THE LOGFC TABLE
@@ -274,9 +291,37 @@ myplot_densplot(xvar,yvar)
 myplot_colplot(xvar,yvar,mycols)
 
 
+##########################
+# CPTMT SCORE
+##########################
+
+score_DT$hicds <- score_DT$dataset
+tad_coexpr_fc_DT$hicds  <- dirname(tad_coexpr_fc_DT$dataset)
+
+all_DT <- merge(score_DT, tad_coexpr_fc_DT, by = c("hicds", "region"))
+
+stopifnot(!is.na(all_DT$score))
+
+yvar <- "meanFC"
+xvar <- "score"
+myplot_densplot(xvar,yvar)
 
 
+yvar <- "withinCoexpr"
+xvar <- "score"
+myplot_densplot(xvar,yvar)
 
+yvar <- "betweenAllCoexpr"
+xvar <- "score"
+myplot_densplot(xvar,yvar)
+
+yvar <- "betweenKbCoexpr"
+xvar <- "score"
+myplot_densplot(xvar,yvar)
+
+yvar <- "betweenNbrCoexpr"
+xvar <- "score"
+myplot_densplot(xvar,yvar)
 
 
 
