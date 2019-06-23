@@ -39,7 +39,7 @@ mypattern <- "coexprDT.Rdata"
 pipOutFolder <- file.path("PIPELINE", "OUTPUT_FOLDER")
 stopifnot(dir.exists(pipOutFolder))
 
-all_fc_files <- list.files(pipOutFolder, recursive = TRUE, pattern="all_meanCorr_TAD.Rdata", full.names = FALSE)
+all_fc_files <- list.files(pipOutFolder, recursive = TRUE, pattern="all_meanLogFC_TAD.Rdata", full.names = FALSE)
 stopifnot(length(all_fc_files) > 0)
 
 coexprFiles  <- list.files("CREATE_COEXPR_SORTNODUP", recursive = TRUE, pattern = mypattern, full.names = TRUE)
@@ -468,6 +468,8 @@ tad_coexpr_fc_DT$TADrank <- 1:nrow(tad_coexpr_fc_DT)
 
 tad_coexpr_fc_DT$withinDiffCond1Cond2 <- (tad_coexpr_fc_DT$withinCoexpr_cond1 - tad_coexpr_fc_DT$withinCoexpr_cond2)
 tad_coexpr_fc_DT$withinRatioCond1Cond2 <- (tad_coexpr_fc_DT$withinCoexpr_cond1 / tad_coexpr_fc_DT$withinCoexpr_cond2)
+tad_coexpr_fc_DT$withinChangeratioCond1Cond2 <- (tad_coexpr_fc_DT$withinCoexpr_cond2 - tad_coexpr_fc_DT$withinCoexpr_cond1)/tad_coexpr_fc_DT$withinCoexpr_cond1
+
 
 tad_coexpr_fc_DT$withinBetweenDiffAll <- (tad_coexpr_fc_DT$withinCoexpr - tad_coexpr_fc_DT$betweenAllCoexpr) 
 tad_coexpr_fc_DT$withinBetweenRatioAll <- (tad_coexpr_fc_DT$withinCoexpr / tad_coexpr_fc_DT$betweenAllCoexpr) 
@@ -479,6 +481,145 @@ tad_coexpr_fc_DT$withinBetweenDiffKb <- (tad_coexpr_fc_DT$withinCoexpr - tad_coe
 tad_coexpr_fc_DT$withinBetweenRatioKb <- (tad_coexpr_fc_DT$withinCoexpr / tad_coexpr_fc_DT$betweenKbCoexpr) 
 
 
+outFile <- file.path(outFolder, paste0("multidens_withinCoexpr.", plotType))
+do.call(plotType, list(outFile, height=myHeight, width=myHeight*1.2))
+plot_multiDens(list(
+  withinCoexpr = tad_coexpr_DT[,"withinCoexpr"],
+  withinCoexpr_cond1 = tad_coexpr_DT[,"withinCoexpr_cond1"],
+  withinCoexpr_cond2 = tad_coexpr_DT[,"withinCoexpr_cond2"]
+), my_xlab = "withinCoexpr. corr."
+)
+foo <- dev.off()
+cat(paste0("... written: ", outFile, "\n"))
+
+
+outFile <- file.path(outFolder, paste0("multidens_betweenCoexpr_all.", plotType))
+do.call(plotType, list(outFile, height=myHeight, width=myHeight*1.2))
+plot_multiDens(list(
+  betweenAllCoexpr = tad_coexpr_DT[,"betweenAllCoexpr"],
+  betweenNbrCoexpr = tad_coexpr_DT[,"betweenNbrCoexpr"],
+  betweenKbCoexpr = tad_coexpr_DT[,"betweenKbCoexpr"],
+  betweenAllCoexpr_cond1 = tad_coexpr_DT[,"betweenAllCoexpr_cond1"],
+  betweenNbrCoexpr_cond1 = tad_coexpr_DT[,"betweenNbrCoexpr_cond1"],
+  betweenKbCoexpr_cond1 = tad_coexpr_DT[,"betweenKbCoexpr_cond1"],
+  betweenAllCoexpr_cond2 = tad_coexpr_DT[,"betweenAllCoexpr_cond2"],
+  betweenNbrCoexpr_cond2 = tad_coexpr_DT[,"betweenNbrCoexpr_cond2"],
+  betweenKbCoexpr_cond2= tad_coexpr_DT[,"betweenKbCoexpr_cond2"]
+), my_xlab = "betweenCoexpr. corr. (all cond.)",
+plotTit = "all between coexpr."
+)
+foo <- dev.off()
+cat(paste0("... written: ", outFile, "\n"))
+
+
+outFile <- file.path(outFolder, paste0("multidens_betweenAllCoexpr_all.", plotType))
+do.call(plotType, list(outFile, height=myHeight, width=myHeight*1.2))
+plot_multiDens(list(
+  betweenAllCoexpr = tad_coexpr_DT[,"betweenAllCoexpr"],
+  # betweenNbrCoexpr = tad_coexpr_DT[,"betweenNbrCoexpr"],
+  # betweenKbCoexpr = tad_coexpr_DT[,"betweenKbCoexpr"],
+  betweenAllCoexpr_cond1 = tad_coexpr_DT[,"betweenAllCoexpr_cond1"],
+  # betweenNbrCoexpr_cond1 = tad_coexpr_DT[,"betweenNbrCoexpr_cond1"],
+  # betweenKbCoexpr_cond1 = tad_coexpr_DT[,"betweenKbCoexpr_cond1"],
+  betweenAllCoexpr_cond2 = tad_coexpr_DT[,"betweenAllCoexpr_cond2"]#,
+  # betweenNbrCoexpr_cond2 = tad_coexpr_DT[,"betweenNbrCoexpr_cond2"],
+  # betweenKbCoexpr_cond2= tad_coexpr_DT[,"betweenKbCoexpr_cond2"]
+), my_xlab = "betweenCoexpr. corr. (all cond.)",
+plotTit = "betweenAllCoexpr"
+)
+foo <- dev.off()
+cat(paste0("... written: ", outFile, "\n"))
+
+outFile <- file.path(outFolder, paste0("multidens_betweenKbCoexpr_all.", plotType))
+do.call(plotType, list(outFile, height=myHeight, width=myHeight*1.2))
+plot_multiDens(list(
+  # betweenAllCoexpr = tad_coexpr_DT[,"betweenAllCoexpr"],
+  # betweenNbrCoexpr = tad_coexpr_DT[,"betweenNbrCoexpr"],
+  betweenKbCoexpr = tad_coexpr_DT[,"betweenKbCoexpr"],
+  # betweenAllCoexpr_cond1 = tad_coexpr_DT[,"betweenAllCoexpr_cond1"],
+  # betweenNbrCoexpr_cond1 = tad_coexpr_DT[,"betweenNbrCoexpr_cond1"],
+  betweenKbCoexpr_cond1 = tad_coexpr_DT[,"betweenKbCoexpr_cond1"],
+  # betweenAllCoexpr_cond2 = tad_coexpr_DT[,"betweenAllCoexpr_cond2"]#,
+  # betweenNbrCoexpr_cond2 = tad_coexpr_DT[,"betweenNbrCoexpr_cond2"],
+  betweenKbCoexpr_cond2= tad_coexpr_DT[,"betweenKbCoexpr_cond2"]
+), my_xlab = "betweenCoexpr. corr. (all cond.)",
+plotTit = "betweenKbCoexpr"
+)
+foo <- dev.off()
+cat(paste0("... written: ", outFile, "\n"))
+
+
+outFile <- file.path(outFolder, paste0("multidens_betweenNbrCoexpr_all.", plotType))
+do.call(plotType, list(outFile, height=myHeight, width=myHeight*1.2))
+plot_multiDens(list(
+  # betweenAllCoexpr = tad_coexpr_DT[,"betweenAllCoexpr"],
+  betweenNbrCoexpr = tad_coexpr_DT[,"betweenNbrCoexpr"],
+  # betweenKbCoexpr = tad_coexpr_DT[,"betweenKbCoexpr"],
+  # betweenAllCoexpr_cond1 = tad_coexpr_DT[,"betweenAllCoexpr_cond1"],
+  betweenNbrCoexpr_cond1 = tad_coexpr_DT[,"betweenNbrCoexpr_cond1"],
+  # betweenKbCoexpr_cond1 = tad_coexpr_DT[,"betweenKbCoexpr_cond1"],
+  # betweenAllCoexpr_cond2 = tad_coexpr_DT[,"betweenAllCoexpr_cond2"]#,
+  betweenNbrCoexpr_cond2 = tad_coexpr_DT[,"betweenNbrCoexpr_cond2"]#,
+  # betweenKbCoexpr_cond2= tad_coexpr_DT[,"betweenKbCoexpr_cond2"]
+), my_xlab = "betweenCoexpr. corr. (all cond.)",
+plotTit = "betweenNbrCoexpr"
+)
+foo <- dev.off()
+cat(paste0("... written: ", outFile, "\n"))
+
+outFile <- file.path(outFolder, paste0("multidens_betweenCoexpr.", plotType))
+do.call(plotType, list(outFile, height=myHeight, width=myHeight*1.2))
+plot_multiDens(list(
+  betweenAllCoexpr = tad_coexpr_DT[,"betweenAllCoexpr"],
+  betweenNbrCoexpr = tad_coexpr_DT[,"betweenNbrCoexpr"],
+  betweenKbCoexpr = tad_coexpr_DT[,"betweenKbCoexpr"]#,
+  # betweenAllCoexpr_cond1 = tad_coexpr_DT[,"betweenAllCoexpr_cond1"],
+  # betweenNbrCoexpr_cond1 = tad_coexpr_DT[,"betweenNbrCoexpr_cond1"],
+  # betweenKbCoexpr_cond1 = tad_coexpr_DT[,"betweenKbCoexpr_cond1"],
+  # betweenAllCoexpr_cond2 = tad_coexpr_DT[,"betweenAllCoexpr_cond2"]#,
+  # betweenNbrCoexpr_cond2 = tad_coexpr_DT[,"betweenNbrCoexpr_cond2"]#,
+  # betweenKbCoexpr_cond2= tad_coexpr_DT[,"betweenKbCoexpr_cond2"]
+), my_xlab = "betweenCoexpr. corr. (all cond.)",
+plotTit = "betweenCoexpr - cond1+2"
+)
+foo <- dev.off()
+cat(paste0("... written: ", outFile, "\n"))
+
+outFile <- file.path(outFolder, paste0("multidens_betweenCoexpr_cond1.", plotType))
+do.call(plotType, list(outFile, height=myHeight, width=myHeight*1.2))
+plot_multiDens(list(
+  # betweenAllCoexpr = tad_coexpr_DT[,"betweenAllCoexpr"],
+  # betweenNbrCoexpr = tad_coexpr_DT[,"betweenNbrCoexpr"],
+  # betweenKbCoexpr = tad_coexpr_DT[,"betweenKbCoexpr"]#,
+  betweenAllCoexpr_cond1 = tad_coexpr_DT[,"betweenAllCoexpr_cond1"],
+  betweenNbrCoexpr_cond1 = tad_coexpr_DT[,"betweenNbrCoexpr_cond1"],
+  betweenKbCoexpr_cond1 = tad_coexpr_DT[,"betweenKbCoexpr_cond1"]#,
+  # betweenAllCoexpr_cond2 = tad_coexpr_DT[,"betweenAllCoexpr_cond2"]#,
+  # betweenNbrCoexpr_cond2 = tad_coexpr_DT[,"betweenNbrCoexpr_cond2"]#,
+  # betweenKbCoexpr_cond2= tad_coexpr_DT[,"betweenKbCoexpr_cond2"]
+), my_xlab = "betweenCoexpr. corr. (cond1)",
+plotTit = "betweenCoexpr - cond1"
+)
+foo <- dev.off()
+cat(paste0("... written: ", outFile, "\n"))
+
+outFile <- file.path(outFolder, paste0("multidens_betweenCoexpr_cond2.", plotType))
+do.call(plotType, list(outFile, height=myHeight, width=myHeight*1.2))
+plot_multiDens(list(
+  # betweenAllCoexpr = tad_coexpr_DT[,"betweenAllCoexpr"],
+  # betweenNbrCoexpr = tad_coexpr_DT[,"betweenNbrCoexpr"],
+  # betweenKbCoexpr = tad_coexpr_DT[,"betweenKbCoexpr"]#,
+  # betweenAllCoexpr_cond1 = tad_coexpr_DT[,"betweenAllCoexpr_cond1"],
+  # betweenNbrCoexpr_cond1 = tad_coexpr_DT[,"betweenNbrCoexpr_cond1"],
+  # betweenKbCoexpr_cond1 = tad_coexpr_DT[,"betweenKbCoexpr_cond1"]#,
+  betweenAllCoexpr_cond2 = tad_coexpr_DT[,"betweenAllCoexpr_cond2"],
+  betweenNbrCoexpr_cond2 = tad_coexpr_DT[,"betweenNbrCoexpr_cond2"],
+  betweenKbCoexpr_cond2= tad_coexpr_DT[,"betweenKbCoexpr_cond2"]
+), my_xlab = "betweenCoexpr. corr. (cond2)", 
+plotTit = "betweenCoexpr - cond2"
+)
+foo <- dev.off()
+cat(paste0("... written: ", outFile, "\n"))
 all_y <- colnames(tad_coexpr_fc_DT)
 all_y <- all_y[! all_y %in% c("dataset", "region", "meanFC", "TADrank")]
 xvar <- "meanFC"
@@ -502,6 +643,24 @@ for(yvar in all_y) {
     addCorr(x=myx,y=myy,legPos="topleft", bty='n')
     foo <- dev.off()
     cat(paste0("... written: ", outFile, "\n"))
+    
+    
+    outFile <- file.path(outFolder, paste0("density_", yvar, ".", plotType))
+    do.call(plotType, list(outFile, height=myHeight, width=myWidth*1.2))
+    plot(density(na.omit(myy)),
+             pch=16,
+             cex=0.7,
+             cex.axis = myCexAxis,
+             cex.lab = myCexLab,
+             # col="black",
+             ylab=yvar,
+             main = paste0(yvar)
+    )
+    foo <- dev.off()
+    cat(paste0("... written: ", outFile, "\n"))
+    
+    
+    
 }
   
   
@@ -593,12 +752,41 @@ for(plotvar in c("withinCoexpr", "betweenAllCoexpr", "betweenKbCoexpr", "between
   foo <- dev.off()
   cat(paste0("... written: ", outFile, "\n"))
   
+}
+
+xvar <- "withinCoexpr"
+stopifnot(xvar %in% colnames(tad_coexpr_DT))
+
+all_y <- c("betweenAllCoexpr", "betweenKbCoexpr", "betweenNbrCoexpr") 
+
+myx <- tad_coexpr_DT[, xvar] 
+
+for(yvar in all_y) {
   
+  stopifnot(yvar %in% colnames(tad_coexpr_DT))
   
+
+  myy <- tad_coexpr_DT[, yvar] 
+  
+  outFile <- file.path(outFolder, paste0(yvar, "_vs_", xvar, ".", plotType))
+  do.call(plotType, list(outFile, height=myHeight, width=myWidth))
+  densplot(y=myy,
+           x=myx,
+           pch=16,
+           cex=0.7,
+           cex.axis = myCexAxis,
+           cex.lab = myCexLab,
+           # col="black",
+           xlab=paste0(xvar),
+           ylab=paste0(yvar),
+           main = paste0("Expr. corr.: ", yvar, " vs. ", xvar)
+  )
+  addCorr(x=myx,y=myy,legPos="topleft", bty='n')
+  foo <- dev.off()
+  cat(paste0("... written: ", outFile, "\n"))
   
 }
 
-  
 
 
 # ######################################################################################

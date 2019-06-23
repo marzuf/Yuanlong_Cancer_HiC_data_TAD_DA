@@ -1,4 +1,4 @@
-# Rscript create_sample_aroundKb_TADs.R
+# Rscript create_sample_around_TADs_withDistN.R
 
 # for a given number of genes
 # go at each BD location
@@ -6,13 +6,12 @@
 # to get an empirical distribution of the correlation
 # between expression of genes separated by the boundary
 
-script_name <- "create_sample_aroundKb_TADs.R"
+script_name <- "create_sample_around_TADs_withDistN.R"
 
 cat("... start ", script_name, "\n")
 
 startTime <- Sys.time()
 
-options(scipen=100)
 
 plotType <- "png"
 myHeight <- 400
@@ -24,16 +23,14 @@ nCpu <- ifelse(SSHFS, 2, 40)
 buildSampleAroundTADs <- TRUE
 
 
-bpAroundTAD <- 2000 * 10^3
-
 suppressPackageStartupMessages(library(foreach, warn.conflicts = FALSE, quietly = TRUE, verbose = FALSE))
 suppressPackageStartupMessages(library(doMC, warn.conflicts = FALSE, quietly = TRUE, verbose = FALSE))
 registerDoMC(nCpu)
 
 mywd <- ifelse(SSHFS, "/media/electron/mnt/etemp/marie/Cancer_HiC_data_TAD_DA", "")
 
-outFolder <- file.path("CREATE_SAMPLE_AROUNDKB_TADS", bpAroundTAD)
-dir.create(outFolder, recursive = TRUE)
+outFolder <- file.path("CREATE_SAMPLE_AROUND_TADS_WITHDISTN")
+dir.create(outFolder)
 
 pipOutFolder <- file.path("PIPELINE", "OUTPUT_FOLDER")
 
@@ -46,14 +43,11 @@ stopifnot(dir.exists(file.path(pipOutFolder, all_hicexpr_ds)))
 ds="ENCSR862OGI_RPMI-7951_40kb/TCGAskcm_lowInf_highInf"
 ds=all_hicexpr_ds[1]
 
-ds="ENCSR401TBQ_Caki2_40kb/TCGAkich_norm_kich"
-reg = "chr9_TAD80"
-
 if(buildSampleAroundTADs) {
   
   
   # all_hicexpr_ds=all_hicexpr_ds[1]
-  all_ds_sample_aroundKb_TADs <-   foreach(ds = all_hicexpr_ds) %do% {
+  all_ds_sample_around_TADs <-   foreach(ds = all_hicexpr_ds) %do% {
     hicds <- file.path(dirname(ds))
     exprds <- basename(ds)
     stopifnot(dir.exists(hicds))
@@ -111,8 +105,8 @@ if(buildSampleAroundTADs) {
     g2t_DT$mid_pos <- (g2t_DT$start+g2t_DT$end)/2
 
     ### !!! FILTERED g2t BY GENELIST !!!!!!!!!!!!!!
-
-    
+        
+    # nPos=10
     reg=pipeline_tadList[1]
     all_sample_around_TADs <- foreach(reg = pipeline_tadList) %dopar% {
 
@@ -136,15 +130,11 @@ if(buildSampleAroundTADs) {
       curr_midPos <- (curr_start+curr_end)/2
       stopifnot(curr_midPos == tadpos_DT$mid_pos[tadpos_DT$region == reg])
       
-      window_start <- max(c(0, curr_start - bpAroundTAD))
-      window_end <- curr_end + bpAroundTAD
-      
-      
       reg_genes <- g2t_DT$entrezID[g2t_DT$region == reg]
       stopifnot(length(reg_genes) > 0)
       
-
-            
+      curr_nGenes <- length(reg_genes)
+      
       # !!! EXTRACT GENES BASED ON START POSITION RELATIVE TO BD
       # !!! SMALLER THAN / GREATER *OR EQUAL* THAN BD POSITION (smaller not equal otherwise genes could come twice)
       
@@ -158,37 +148,39 @@ if(buildSampleAroundTADs) {
       # distance to TAD center
       curr_genesOutsideDT <- curr_g2t[ !curr_g2t$entrezID %in% reg_genes,,drop=FALSE]
       stopifnot(nrow(curr_genesOutsideDT) > 0)
+        
+      curr_genesOutsideDT$distToTAD <- abs(curr_genesOutsideDT$mid_pos - curr_midPos)
+      curr_genesOutsideDT <- curr_genesOutsideDT[order(curr_genesOutsideDT$distToTAD, decreasing=F),,drop=FALSE]
+        
+      sample_around_genes <- curr_genesOutsideDT$entrezID[1:curr_nGenes]
       
-      # select genes with mid position greater equal the window start & mid position smaller equal window end
-      # that do not belong to the TAD
-      curr_genesOutsideDT <-  curr_genesOutsideDT[curr_genesOutsideDT$mid_pos >= window_start &
-                                                    curr_genesOutsideDT$mid_pos <= window_end,]
-      
-      
-
-      sample_around_genes <- curr_genesOutsideDT$entrezID
+      all_dist <- curr_genesOutsideDT$distToTAD[1:curr_nGenes]
+      stopifnot(!is.na(all_dist))
       
       stopifnot(!is.na(curr_genesOutsideDT))
       
+      stopifnot(length(all_dist) == length(sample_around_genes))
+      
       ### ONLY CONSIDER IN COEXPR GENES USED IN PIPELINE ???
       stopifnot(sample_around_genes %in% pipeline_geneList)
-      stopifnot(!sample_around_genes %in% reg_genes)
       
-      sample_around_genes
+      list(genes = sample_around_genes,
+           nGenes = length(sample_around_genes),
+           maxDist = max(all_dist))
       } # end foreach-iterating over TADs
     
     names(all_sample_around_TADs) <- pipeline_tadList
     all_sample_around_TADs
   } # end for iterating over ds
-  names(all_ds_sample_aroundKb_TADs) <- all_hicexpr_ds
-  outFile <- file.path(outFolder, "all_ds_sample_aroundKb_TADs.Rdata")
-  save(all_ds_sample_aroundKb_TADs, file=outFile)
+  names(all_ds_sample_around_TADs) <- all_hicexpr_ds
+  outFile <- file.path(outFolder, "all_ds_sample_around_TADs.Rdata")
+  save(all_ds_sample_around_TADs, file=outFile)
   cat(paste0("... written: ", outFile, "\n"))
   
   # end-if buildCorrAroundBD
 } else {
-  outFile <- file.path(outFolder, "all_ds_sample_aroundKb_TADs.Rdata")
-  all_ds_sample_aroundKb_TADs <- eval(parse(text = load(outFile)))
+  outFile <- file.path(outFolder, "all_ds_sample_around_TADs.Rdata")
+  all_ds_sample_around_TADs <- eval(parse(text = load(outFile)))
 }
 
 

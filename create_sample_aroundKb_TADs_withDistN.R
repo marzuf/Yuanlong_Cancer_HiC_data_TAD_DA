@@ -1,4 +1,4 @@
-# Rscript create_sample_aroundKb_TADs.R
+# Rscript create_sample_aroundKb_TADs_withDistN.R
 
 # for a given number of genes
 # go at each BD location
@@ -6,7 +6,7 @@
 # to get an empirical distribution of the correlation
 # between expression of genes separated by the boundary
 
-script_name <- "create_sample_aroundKb_TADs.R"
+script_name <- "create_sample_aroundKb_TADs_withDistN.R"
 
 cat("... start ", script_name, "\n")
 
@@ -32,7 +32,7 @@ registerDoMC(nCpu)
 
 mywd <- ifelse(SSHFS, "/media/electron/mnt/etemp/marie/Cancer_HiC_data_TAD_DA", "")
 
-outFolder <- file.path("CREATE_SAMPLE_AROUNDKB_TADS", bpAroundTAD)
+outFolder <- file.path("CREATE_SAMPLE_AROUNDKB_TADS_WITHDISTN", bpAroundTAD)
 dir.create(outFolder, recursive = TRUE)
 
 pipOutFolder <- file.path("PIPELINE", "OUTPUT_FOLDER")
@@ -164,17 +164,22 @@ if(buildSampleAroundTADs) {
       curr_genesOutsideDT <-  curr_genesOutsideDT[curr_genesOutsideDT$mid_pos >= window_start &
                                                     curr_genesOutsideDT$mid_pos <= window_end,]
       
-      
+      all_dist <- abs(curr_genesOutsideDT$mid_pos-curr_midPos)
+      stopifnot(!is.na(all_dist))
 
       sample_around_genes <- curr_genesOutsideDT$entrezID
       
       stopifnot(!is.na(curr_genesOutsideDT))
       
+      stopifnot(length(all_dist) == length(sample_around_genes))
+      
       ### ONLY CONSIDER IN COEXPR GENES USED IN PIPELINE ???
       stopifnot(sample_around_genes %in% pipeline_geneList)
       stopifnot(!sample_around_genes %in% reg_genes)
       
-      sample_around_genes
+      list(genes = sample_around_genes,
+           nGenes = length(sample_around_genes),
+           maxDist = max(all_dist))
       } # end foreach-iterating over TADs
     
     names(all_sample_around_TADs) <- pipeline_tadList
