@@ -45,9 +45,12 @@ dataFile <- file.path(dataFolder, "allData_within_between_coexpr.Rdata")
 stopifnot(file.exists(dataFile))
 allData_within_between_coexpr <- eval(parse(text = load(dataFile)))
 
-
 all_domainScore_files <- list.files(".", recursive = TRUE, pattern="_final_domains_withScore.txt", full.names = FALSE)
 stopifnot(length(all_domainScore_files) > 0)
+
+all_ratioDown_files <- list.files(pipOutFolder, recursive = TRUE, pattern="all_obs_ratioDown.Rdata", full.names = FALSE)
+stopifnot(length(all_ratioDown_files) > 0)
+
   
 # sort the TADs by decreasing withinCoexpr
 # plot level of coexpr within and between on the same plot
@@ -94,6 +97,27 @@ tad_coexpr_DT <- tad_coexpr_DT[order(tad_coexpr_DT$withinCoexpr, decreasing = TR
 tad_coexpr_DT$TADrank <- 1:nrow(tad_coexpr_DT)
 
 
+
+
+### BUILD THE ratio down TABLE
+rd_file = all_ratioDown_files[1]
+rD_DT <- foreach(rd_file = all_ratioDown_files, .combine = 'rbind') %dopar% {
+  curr_file <- file.path(pipOutFolder,rd_file)
+  stopifnot(file.exists(curr_file))
+  tad_rd <- eval(parse(text = load(curr_file)))
+  dataset <- dirname(dirname(rd_file))
+  data.frame(
+    dataset = dataset,
+    region = names(tad_rd),
+    ratioDown = as.numeric(tad_rd),
+    stringsAsFactors = FALSE
+  )
+  
+}
+
+
+
+
 ### BUILD THE CPTMT SCORE TABLE
 score_file = all_domainScore_files[1]
 score_DT <- foreach(score_file = all_domainScore_files, .combine = 'rbind') %dopar% {
@@ -123,7 +147,13 @@ fc_DT <- foreach(fc_file = all_fc_files, .combine = 'rbind') %dopar% {
   )
 }
 
-tad_coexpr_fc_DT <- merge(tad_coexpr_DT, fc_DT, by=c("dataset", "region"))
+
+fc_rd_DT <- merge(rD_DT, fc_DT, by=c("dataset", "region"))
+stopifnot(nrow(fc_rd_DT) == nrow(rD_DT))
+stopifnot(nrow(fc_DT) == nrow(rD_DT))
+stopifnot(!is.na(fc_rd_DT))
+
+tad_coexpr_fc_DT <- merge(tad_coexpr_DT, fc_rd_DT, by=c("dataset", "region"))
 tad_coexpr_fc_DT <- tad_coexpr_fc_DT[order(tad_coexpr_fc_DT$withinCoexpr, decreasing = TRUE),]
 tad_coexpr_fc_DT$TADrank <- 1:nrow(tad_coexpr_fc_DT)
 
@@ -180,7 +210,7 @@ tad_coexpr_fc_DT <- merge(tad_coexpr_fc_DT, colDT, by = "cmps", all.x = TRUE, al
 stopifnot(!is.na(tad_coexpr_fc_DT$cmpCol))
 
 
-myplot_densplot <- function(xvar, yvar) {
+myplot_densplot <- function(xvar, yvar, addCurve=FALSE) {
   
   stopifnot(xvar %in% colnames(tad_coexpr_fc_DT))
   myx <- tad_coexpr_fc_DT[,xvar]
@@ -201,11 +231,14 @@ myplot_densplot <- function(xvar, yvar) {
            main = paste0(yvar, " vs. ", xvar)
   )
   addCorr(x=myx,y=myy,legPos="topleft", bty='n')
+  if(addCurve) {
+    curve(1*x, lty=2, col="grey", add = TRUE)
+  }
   foo <- dev.off()
   cat(paste0("... written: ", outFile, "\n"))
 }
 
-myplot_colplot <- function(xvar, yvar, mycols) {
+myplot_colplot <- function(xvar, yvar, mycols, addCurve = FALSE) {
   
   stopifnot(xvar %in% colnames(tad_coexpr_fc_DT))
   myx <- tad_coexpr_fc_DT[,xvar]
@@ -226,6 +259,9 @@ myplot_colplot <- function(xvar, yvar, mycols) {
            main = paste0(yvar, " vs. ", xvar)
   )
   addCorr(x=myx,y=myy,legPos="topleft", bty='n')
+  if(addCurve) {
+    curve(1*x, lty=2, col="grey",add=TRUE)
+  }
   addSubtypeLeg(bty="n")
   foo <- dev.off()
   cat(paste0("... written: ", outFile, "\n"))
@@ -244,14 +280,26 @@ myplot_densplot(xvar,yvar)
 myplot_colplot(xvar,yvar,mycols)
 
 ##########################
+### detect "disruption" and DE: those with high/low ratioDown and high FC in coexpression => FC coexpr vs. ratio Down
+##########################
+
+yvar <- "withinBetwNbrLogFC"
+xvar <- "ratioDown"
+
+myplot_densplot(xvar,yvar)
+myplot_colplot(xvar,yvar,mycols)
+
+
+
+##########################
 ### detect "disruption": those with change in coexpr => coexpr cond2 vs coexpr cond1
 ##########################
 
 yvar <- "withinCoexpr_cond2"
 xvar <- "withinCoexpr_cond1"
 
-myplot_densplot(xvar,yvar)
-myplot_colplot(xvar,yvar,mycols)
+myplot_densplot(xvar,yvar, addCurve = TRUE)
+myplot_colplot(xvar,yvar,mycols, addCurve = TRUE)
 
 
 
@@ -261,8 +309,8 @@ myplot_colplot(xvar,yvar,mycols)
 yvar <- "withinBetweenNbrDiffCond2"
 xvar <- "withinBetweenNbrDiffCond1"
 
-myplot_densplot(xvar,yvar)
-myplot_colplot(xvar,yvar,mycols)
+myplot_densplot(xvar,yvar, addCurve = TRUE)
+myplot_colplot(xvar,yvar,mycols, addCurve = TRUE)
 
 ##########################
 ### detect coordinated change in expression and DE: those with high FC and high coexpr => coexpr vs. FC expr
@@ -283,6 +331,13 @@ xvar <- "meanFC"
 myplot_densplot(xvar,yvar)
 myplot_colplot(xvar,yvar,mycols)
 
+yvar <- "withinCoexpr"
+xvar <- "ratioDown"
+
+myplot_densplot(xvar,yvar)
+myplot_colplot(xvar,yvar,mycols)
+
+
 
 yvar <- "withinBetweenDiffNbr"
 xvar <- "meanFC"
@@ -299,6 +354,10 @@ score_DT$hicds <- score_DT$dataset
 tad_coexpr_fc_DT$hicds  <- dirname(tad_coexpr_fc_DT$dataset)
 
 all_DT <- merge(score_DT, tad_coexpr_fc_DT, by = c("hicds", "region"))
+
+tad_coexpr_fc_DT <- all_DT
+
+head(all_DT)
 
 stopifnot(!is.na(all_DT$score))
 

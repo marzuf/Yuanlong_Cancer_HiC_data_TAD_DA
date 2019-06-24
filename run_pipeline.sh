@@ -82,6 +82,9 @@
 # COLORECTAL
 # ./run_pipeline.sh GSE105318_DLD1_40kb TCGAcoad_msi_mss # 10.06.2019
 
+# LYMPHOBLAST
+# ./run_pipeline.sh K562_40kb TCGAlaml_wt_mutFLT3 # 10.06.2019
+
 
 
 start_time=$(date -R)    
