@@ -1,14 +1,11 @@
-# Rscript expr_variance.R log2fpkm
+# Rscript expr_variance_byTAD.R log2fpkm
 
+buildTable <- FALSE
 
-buildTable <- TRUE
-
-cat("> START: expr_variance.R\n")
+cat("> START: expr_variance_byTAD.R\n")
 
 SSHFS <- FALSE
 setDir <- ifelse(SSHFS, "/media/electron", "")
-setDir <- ifelse(SSHFS, "~/media/electron", "")
-
 
 library(foreach)
 library(doMC)
@@ -80,6 +77,8 @@ settingFolder <- file.path("PIPELINE", "INPUT_FILES")
 
 dsFold <- file.path("PIPELINE", "OUTPUT_FOLDER")
 
+script0_name <- "0_prepGeneData"
+
 all_setting_files <- list.files(settingFolder, full.names=T, recursive = TRUE)
 all_setting_files <- all_setting_files[grepl("^run_settings_.+\\.R$", basename(all_setting_files))]
 
@@ -88,7 +87,7 @@ stopifnot(length(all_setting_files) > 0)
 auc_coexprdist_fold <- file.path("AUC_COEXPRDIST_WITHFAM_SORTNODUP")
 stopifnot(dir.exists(auc_coexprdist_fold))
 
-outFold <- file.path(paste0("EXPR_VARIANCE"), toupper(exprType))
+outFold <- file.path(paste0("EXPR_VARIANCE_BYTAD"), toupper(exprType))
 dir.create(outFold, recursive = TRUE)
 
 plotType <- "svg"
@@ -111,8 +110,14 @@ ds_file = all_setting_files[1]
 
 # all_setting_files <- all_setting_files[1:3]
 
+outNames <- all_setting_files
+outSuffix <- gsub("^run_settings_", "", basename(outNames))
+outSuffix <- gsub("\\.R$", "", outSuffix)
+outPrefix <- basename(dirname(outNames))
+outNames <- paste0(outPrefix, "_", outSuffix)
+
 if(buildTable) {
-  all_ds_geneVarDT <- foreach(ds_file = all_setting_files, .combine="rbind") %dopar% {
+  all_ds_geneVarDT <- foreach(ds_file = all_setting_files) %dopar% {
     
     hicds <- basename(dirname(ds_file))
     exprds <- gsub("run_settings_(.+)\\.R", "\\1", basename(ds_file))
@@ -244,8 +249,62 @@ if(buildTable) {
     medianMostVar_cond2 <- median(mostVariant_cond2)
     medianLeastVar_cond2 <- median(leastVariant_cond2)
     
+    ### VARIANCE BY TAD
+    stopifnot( setequal(names(geneList), rownames(curr_exprDT)))
+    stopifnot( setequal(names(geneList), rownames(curr_exprDT_cond1)))
+    stopifnot( setequal(names(geneList), rownames(curr_exprDT_cond2)))
+        
     
-    data.frame(
+    cat("... load regionList\n")
+    regionList <- eval(parse(text = load(
+      file.path(ds_pipFolder, "0_prepGeneData", "pipeline_regionList.Rdata")
+    )))
+    
+    ### RETRIEVE THE GENE2TAD ASSIGNMENT
+    g2tFile <- file.path(hicds, "genes2tad", "all_genes_positions.txt")
+    stopifnot(file.exists(g2tFile))
+    g2t_DT <- read.delim(g2tFile, header=F, col.names = c("entrezID",  "chromo", "start", "end", "region"), stringsAsFactors = FALSE)
+    g2t_DT$entrezID <- as.character(g2t_DT$entrezID)
+    g2t_DT <- g2t_DT[g2t_DT$entrezID %in% geneList,]
+    stopifnot(nrow(g2t_DT) > 0)
+    stopifnot(geneList %in% g2t_DT$entrezID)
+    reg=regionList[1]
+    tadMeanVar <- foreach(reg = regionList, .combine='c') %dopar% {
+      reg_genes <- g2t_DT$entrezID[g2t_DT$region==reg]
+      stopifnot(reg_genes %in% geneList)
+      expr_genes <- names(geneList)[geneList %in% reg_genes]
+      stopifnot(expr_genes %in% rownames(curr_exprDT))
+      tad_exprDT <- curr_exprDT[expr_genes,]
+      geneVar <- apply(tad_exprDT, 1,  var, na.rm=T)
+      mean(geneVar)
+    }
+    names(tadMeanVar) <- regionList 
+    
+    tadMeanVar_cond1 <- foreach(reg = regionList, .combine='c') %dopar% {
+      reg_genes <- g2t_DT$entrezID[g2t_DT$region==reg]
+      stopifnot(reg_genes %in% geneList)
+      expr_genes <- names(geneList)[geneList %in% reg_genes]
+      stopifnot(expr_genes %in% rownames(curr_exprDT_cond1))
+      tad_exprDT_cond1 <- curr_exprDT_cond1[expr_genes,]
+      geneVar_cond1 <- apply(tad_exprDT_cond1, 1,  var, na.rm=T)
+      mean(geneVar_cond1)
+    }
+    names(tadMeanVar_cond1) <- regionList 
+    
+    
+    tadMeanVar_cond2 <- foreach(reg = regionList, .combine='c') %dopar% {
+      reg_genes <- g2t_DT$entrezID[g2t_DT$region==reg]
+      stopifnot(reg_genes %in% geneList)
+      expr_genes <- names(geneList)[geneList %in% reg_genes]
+      stopifnot(expr_genes %in% rownames(curr_exprDT_cond2))
+      tad_exprDT_cond2 <- curr_exprDT_cond2[expr_genes,]
+      geneVar_cond2 <- apply(tad_exprDT_cond2, 1,  var, na.rm=T)
+      mean(geneVar_cond2)
+    }
+    names(tadMeanVar_cond2) <- regionList 
+    
+        
+    list(
       nTopLast = nTopLast,
       data_type = exprType,
       hicds = hicds,
@@ -266,11 +325,15 @@ if(buildTable) {
       medianMostVar_cond2 = medianMostVar_cond2,
       medianLeastVar_cond2 = medianLeastVar_cond2,
       
+      region = regionList,
       
-      stringsAsFactors = FALSE
+      tadMeanVar = tadMeanVar,
+      tadMeanVar_cond1 = tadMeanVar_cond1,
+      tadMeanVar_cond2 = tadMeanVar_cond2
     )
     
-  }
+  } # end-foreach iterating over datasets
+  names(all_ds_geneVarDT) <- outNames
   outFile <- file.path(outFold, "all_ds_geneVarDT.Rdata")
   save(all_ds_geneVarDT, file = outFile)
   cat(paste0("... written: ", outFile, "\n"))
@@ -278,6 +341,18 @@ if(buildTable) {
   outFile <- file.path(outFold, "all_ds_geneVarDT.Rdata")
   all_ds_geneVarDT <- eval(parse(text = load(outFile)))
 }
+all_ds_geneVar_with_TAD_data <- all_ds_geneVarDT
+
+all_ds_geneVarDT_noTAD <- lapply(all_ds_geneVarDT, function(x) {
+  toKeep <- ! names(x) %in% c("tadMeanVar", "tadMeanVar_cond1", "tadMeanVar_cond2")
+  x[toKeep]
+})
+names(all_ds_geneVarDT_noTAD) <- names(all_ds_geneVarDT)
+
+
+# all_ds_geneVarDT <- data.frame(do.call(rbind, all_ds_geneVarDT_noTAD))
+all_ds_geneVarDT <- do.call(rbind, lapply(all_ds_geneVarDT_noTAD, data.frame)) # otherwise the columns remain as lists !
+
 
 # stop("--ok")
 # load("GENE_VARIANCE/LOG2FPKM/all_ds_geneVarDT.Rdata")
@@ -285,7 +360,7 @@ if(buildTable) {
 ########################################################################################## RETRIEVE FCC AND COEXPRDIST
 ##########################################################################################
 
-all_ds <- unique(all_ds_geneVarDT$dataset)
+all_ds <- unique(as.character(all_ds_geneVarDT$dataset))
 
 curr_ds <- all_ds[1]
 
@@ -293,8 +368,10 @@ curr_ds <- all_ds[1]
 aucFCC <- foreach(curr_ds = all_ds, .combine='c') %dopar% {
   
   hicds <- all_ds_geneVarDT$hicds[all_ds_geneVarDT$dataset == curr_ds]
+  hicds <- unique(hicds)
   stopifnot(length(hicds) == 1)
   exprds <- all_ds_geneVarDT$exprds[all_ds_geneVarDT$dataset == curr_ds]
+  exprds <- unique(exprds)
   stopifnot(length(exprds) == 1)
   
   step17_fold <- file.path(dsFold, hicds, exprds, script17_name)
@@ -329,8 +406,10 @@ stopifnot(!is.na(curr_colors))
 aucCoexprDist <- foreach(curr_ds = all_ds, .combine='c') %dopar% {
   
   hicds <- all_ds_geneVarDT$hicds[all_ds_geneVarDT$dataset == curr_ds]
+  hicds <- unique(hicds)
   stopifnot(length(hicds) == 1)
   exprds <- all_ds_geneVarDT$exprds[all_ds_geneVarDT$dataset == curr_ds]
+  exprds <- unique(exprds)
   stopifnot(length(exprds) == 1)
   
   ### RETRIEVE FCC
@@ -349,9 +428,9 @@ outFile <- file.path(outFold, "aucCoexprDist.Rdata")
 save(aucCoexprDist, file = outFile)
 cat(paste0("... written: ", outFile, "\n"))
 
-# load("GENE_VARIANCE/LOG2FPKM/all_ds_geneVarDT.Rdata")
-# load("GENE_VARIANCE/LOG2FPKM/aucFCC.Rdata")
-# load("GENE_VARIANCE/LOG2FPKM/aucCoexprDist.Rdata")
+# load("EXPR_VARIANCE_BYTAD/LOG2FPKM/all_ds_geneVarDT.Rdata")
+# load("EXPR_VARIANCE_BYTAD/LOG2FPKM/aucFCC.Rdata")
+# load("EXPR_VARIANCE_BYTAD/LOG2FPKM/aucCoexprDist.Rdata")
 
 subTypeDT <- data.frame(exprds=names(cancer_subAnnot), subtype=cancer_subAnnot, stringsAsFactors = FALSE)
 colorDT <- data.frame(exprds=names(dataset_proc_colors), color=dataset_proc_colors, stringsAsFactors = FALSE)
@@ -368,6 +447,7 @@ stopifnot(nrow(all_ds_geneVarDT) == nrow(subtype_data_DT))
 dsByType <- table(unique(subtype_data_DT[, c("exprds", "subtype")])$subtype)
 nDSbyType <- setNames(as.numeric(dsByType), names(dsByType))
 subTit <- paste0("# DS: ", paste0(names(nDSbyType), "=", as.numeric(nDSbyType), collapse = " - "))
+
 
 ##########################################################################################
 ##########################################################################################

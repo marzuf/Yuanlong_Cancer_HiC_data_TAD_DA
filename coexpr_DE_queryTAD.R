@@ -1,10 +1,10 @@
-# Rscript coexpr_DE_analysis.R
+# Rscript coexpr_DE_queryTAD.R
 
-script_name <- "coexpr_DE_analysis.R"
+script_name <- "coexpr_DE_queryTAD.R"
 
 startTime <- Sys.time()
 
-cat("> START coexpr_DE_analysis.R \n")
+cat("> START coexpr_DE_queryTAD.R \n")
 
 SSHFS <- FALSE
 
@@ -28,7 +28,7 @@ windowSizeBp <- 500*10^3
 options(scipen=100)
 
 
-outFolder <- "COEXPR_DE_ANALYSIS"
+outFolder <- "COEXPR_DE_QUERYTAD"
 dir.create(outFolder, recursive=TRUE)
 
 dataFolder <- "COEXPR_BETWEEN_WITHIN_ALL"
@@ -204,183 +204,59 @@ tad_coexpr_fc_DT <- merge(tad_coexpr_fc_DT, colDT, by = "cmps", all.x = TRUE, al
 
 stopifnot(!is.na(tad_coexpr_fc_DT$cmpCol))
 
-
 outFile <- file.path(outFolder, "tad_coexpr_fc_DT.Rdata")
 save(tad_coexpr_fc_DT, file = outFile)
 cat(paste0("... written: ", outFile, "\n"))
 
 
-myplot_densplot <- function(xvar, yvar, addCurve=FALSE) {
+#################################################################
+################################################################# HIGH FC and HIGH WITHIN COEXPR
+#################################################################
+
+
+# by cmpTypes
+all_cmps <- unique(tad_coexpr_fc_DT$cmpType)
+
+
+rankingVars <- c("withinCoexpr_rank", "meanFC_rank", "withinCoexpr_meanFC_avgRank")
+
+nTop <- 5
+
+
+cmp=all_cmps[1]
+for(cmp in all_cmps){
   
-  stopifnot(xvar %in% colnames(tad_coexpr_fc_DT))
-  myx <- tad_coexpr_fc_DT[,xvar]
-  stopifnot(yvar %in% colnames(tad_coexpr_fc_DT))
-  myy <- tad_coexpr_fc_DT[,yvar]
-  mycols <- tad_coexpr_fc_DT$cmpCol
+  cmp_DT <- tad_coexpr_fc_DT[tad_coexpr_fc_DT$cmps == cmp,]
   
-  outFile <- file.path(outFolder, paste0(yvar, "_vs_", xvar, "_densplot.", plotType))
-  do.call(plotType, list(outFile, height=myHeight, width=myWidth))
-  densplot(y=myy,
-           x=myx,
-           pch=16,
-           cex=0.7,
-           cex.axis = myCexAxis,
-           cex.lab = myCexLab,
-           xlab=xvar,
-           ylab=yvar,
-           main = paste0(yvar, " vs. ", xvar)
-  )
-  addCorr(x=myx,y=myy,legPos="topleft", bty='n')
-  if(addCurve) {
-    curve(1*x, lty=2, col="grey", add = TRUE)
+  cmp_DT$withinCoexpr_rank <- rank(-cmp_DT$withinCoexpr, ties="min") # rank: highest rank = highest coexpr value
+  cmp_DT$meanFC_rank <- rank(-abs(cmp_DT$meanFC), ties="min") # rank: highest rank = highest coexpr value
+  
+  cmp_DT$withinCoexpr_meanFC_avgRank <- (cmp_DT$withinCoexpr_rank+cmp_DT$meanFC_rank)/2
+  
+  # plot(
+  #   x= cmp_DT$withinCoexpr_rank,
+  #   y= cmp_DT$meanFC_rank
+  # )
+  
+  for(var in rankingVars) {
+    
+    
+    
+    
+    
   }
-  foo <- dev.off()
-  cat(paste0("... written: ", outFile, "\n"))
+  
+  
 }
 
-myplot_colplot <- function(xvar, yvar, mycols, addCurve = FALSE) {
-  
-  stopifnot(xvar %in% colnames(tad_coexpr_fc_DT))
-  myx <- tad_coexpr_fc_DT[,xvar]
-  stopifnot(yvar %in% colnames(tad_coexpr_fc_DT))
-  myy <- tad_coexpr_fc_DT[,yvar]
-  
-  outFile <- file.path(outFolder, paste0(yvar, "_vs_", xvar, "_colplot.", plotType))
-  do.call(plotType, list(outFile, height=myHeight, width=myWidth))
-  plot(y=myy,
-           x=myx,
-           pch=16,
-           cex=0.7,
-           cex.axis = myCexAxis,
-           cex.lab = myCexLab,
-           xlab=xvar,
-           ylab=yvar,
-       col=mycols,
-           main = paste0(yvar, " vs. ", xvar)
-  )
-  addCorr(x=myx,y=myy,legPos="topleft", bty='n')
-  if(addCurve) {
-    curve(1*x, lty=2, col="grey",add=TRUE)
-  }
-  addSubtypeLeg(bty="n")
-  foo <- dev.off()
-  cat(paste0("... written: ", outFile, "\n"))
-}
-
-mycols <- tad_coexpr_fc_DT$cmpCol
-
-##########################
-### detect "disruption" and DE: those with high FC in expression and high FC in coexpression => FC coexpr vs. FC expr.
-##########################
-
-yvar <- "withinBetwNbrLogFC"
-xvar <- "meanFC"
-
-myplot_densplot(xvar,yvar)
-myplot_colplot(xvar,yvar,mycols)
-
-##########################
-### detect "disruption" and DE: those with high/low ratioDown and high FC in coexpression => FC coexpr vs. ratio Down
-##########################
-
-yvar <- "withinBetwNbrLogFC"
-xvar <- "ratioDown"
-
-myplot_densplot(xvar,yvar)
-myplot_colplot(xvar,yvar,mycols)
 
 
 
-##########################
-### detect "disruption": those with change in coexpr => coexpr cond2 vs coexpr cond1
-##########################
-
-yvar <- "withinCoexpr_cond2"
-xvar <- "withinCoexpr_cond1"
-
-myplot_densplot(xvar,yvar, addCurve = TRUE)
-myplot_colplot(xvar,yvar,mycols, addCurve = TRUE)
 
 
 
-##########################
-### detect "disruption": those with change (or remain cohesive ?) in coexpr => betw-within cond2 vs betw-within cond1
-##########################
-yvar <- "withinBetweenNbrDiffCond2"
-xvar <- "withinBetweenNbrDiffCond1"
-
-myplot_densplot(xvar,yvar, addCurve = TRUE)
-myplot_colplot(xvar,yvar,mycols, addCurve = TRUE)
-
-##########################
-### detect coordinated change in expression and DE: those with high FC and high coexpr => coexpr vs. FC expr
-##########################
-yvar <- "withinBetwNbrLogFC"
-xvar <- "meanFC"
-
-myplot_densplot(xvar,yvar)
-myplot_colplot(xvar,yvar,mycols)
-
-##########################
-### detect those that function as regulatory unit and DE: those with high FC and high diff. between-within => betw-within vs. FC expr
-##########################
-
-yvar <- "withinCoexpr"
-xvar <- "meanFC"
-
-myplot_densplot(xvar,yvar)
-myplot_colplot(xvar,yvar,mycols)
-
-yvar <- "withinCoexpr"
-xvar <- "ratioDown"
-
-myplot_densplot(xvar,yvar)
-myplot_colplot(xvar,yvar,mycols)
 
 
-
-yvar <- "withinBetweenDiffNbr"
-xvar <- "meanFC"
-
-myplot_densplot(xvar,yvar)
-myplot_colplot(xvar,yvar,mycols)
-
-
-##########################
-# CPTMT SCORE
-##########################
-
-score_DT$hicds <- score_DT$dataset
-tad_coexpr_fc_DT$hicds  <- dirname(tad_coexpr_fc_DT$dataset)
-
-all_DT <- merge(score_DT, tad_coexpr_fc_DT, by = c("hicds", "region"))
-
-tad_coexpr_fc_DT <- all_DT
-
-head(all_DT)
-
-stopifnot(!is.na(all_DT$score))
-
-yvar <- "meanFC"
-xvar <- "score"
-myplot_densplot(xvar,yvar)
-
-
-yvar <- "withinCoexpr"
-xvar <- "score"
-myplot_densplot(xvar,yvar)
-
-yvar <- "betweenAllCoexpr"
-xvar <- "score"
-myplot_densplot(xvar,yvar)
-
-yvar <- "betweenKbCoexpr"
-xvar <- "score"
-myplot_densplot(xvar,yvar)
-
-yvar <- "betweenNbrCoexpr"
-xvar <- "score"
-myplot_densplot(xvar,yvar)
 
 
 

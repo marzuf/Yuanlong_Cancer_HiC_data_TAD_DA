@@ -36,7 +36,8 @@ all_analyses = c(
 "TCGAlihc_wt_mutCTNNB1",
 "TCGAprad_norm_prad",
 "TCGAbrca_lum_bas",
-"TCGApaad_wt_mutKRAS"
+"TCGApaad_wt_mutKRAS",
+"TCGAlaml_wt_mutFLT3"
 )
 all_analyses <- unique(all_analyses)
 
@@ -59,7 +60,8 @@ all_cmps = c(
 "TCGAlihc_norm_lihc" = "norm_vs_tumor",
 "TCGAlihc_wt_mutCTNNB1" = "wt_vs_mut",
 "TCGAbrca_lum_bas" = "subtypes",
-"TCGApaad_wt_mutKRAS" = "wt_vs_mut"
+"TCGApaad_wt_mutKRAS" = "wt_vs_mut",
+"TCGAlaml_wt_mutFLT3" = "wt_vs_mut"
 )
 
 all_cols = c(

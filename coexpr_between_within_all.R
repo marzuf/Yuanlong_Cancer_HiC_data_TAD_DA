@@ -9,12 +9,12 @@ cat("> START coexpr_between_within_all.R \n")
 
 SSHFS <- FALSE
 
-buildData <- FALSE
+buildData <- TRUE
 
 require(tools)
 require(foreach)
 require(doMC)
-registerDoMC(ifelse(SSHFS, 2, 40))
+registerDoMC(ifelse(SSHFS, 2, 80))
 
 source("../Cancer_HiC_data_TAD_DA/utils_fct.R")
 
@@ -75,6 +75,9 @@ all_ds_sample_aroundKb_TADs <- eval(parse(text = load(aroundKbTADfile)))
 coexprFilesOutNames <- coexprFiles
 
 coexprDataFile = coexprFiles[1]
+
+stopifnot(length(coexprFiles) == length(all_ds_sample_aroundKb_TADs))
+stopifnot(length(coexprFiles) == length(all_ds_sample_around_TADs))
 
 if(buildData) {
 

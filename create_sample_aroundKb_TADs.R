@@ -24,7 +24,8 @@ nCpu <- ifelse(SSHFS, 2, 40)
 buildSampleAroundTADs <- TRUE
 
 
-bpAroundTAD <- 2000 * 10^3
+# bpAroundTAD <- 2000 * 10^3
+bpAroundTAD <- 500 * 10^3
 
 suppressPackageStartupMessages(library(foreach, warn.conflicts = FALSE, quietly = TRUE, verbose = FALSE))
 suppressPackageStartupMessages(library(doMC, warn.conflicts = FALSE, quietly = TRUE, verbose = FALSE))
