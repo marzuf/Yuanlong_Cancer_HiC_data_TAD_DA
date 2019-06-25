@@ -8,6 +8,8 @@ cat("> START coexpr_DE_queryTAD.R \n")
 
 SSHFS <- FALSE
 
+setDir <- ifelse(SSHFS, "/media/electron", "")
+
 require(tools)
 require(foreach)
 require(doMC)
@@ -15,6 +17,8 @@ registerDoMC(ifelse(SSHFS, 2, 40))
 
 source("../Cancer_HiC_data_TAD_DA/utils_fct.R")
 source("subtype_cols.R")
+
+source("look_tads_fct.R")
 
 plotType <- "png"
 myHeight <- ifelse(plotType=="png", 500, 7)
@@ -40,7 +44,6 @@ stopifnot(dir.exists(pipOutFolder))
 all_fc_files <- list.files(pipOutFolder, recursive = TRUE, pattern="all_meanLogFC_TAD.Rdata", full.names = FALSE)
 stopifnot(length(all_fc_files) > 0)
 
-
 dataFile <- file.path(dataFolder, "allData_within_between_coexpr.Rdata")
 stopifnot(file.exists(dataFile))
 allData_within_between_coexpr <- eval(parse(text = load(dataFile)))
@@ -51,7 +54,16 @@ stopifnot(length(all_domainScore_files) > 0)
 all_ratioDown_files <- list.files(pipOutFolder, recursive = TRUE, pattern="all_obs_ratioDown.Rdata", full.names = FALSE)
 stopifnot(length(all_ratioDown_files) > 0)
 
+script0_name <- "0_prepGeneData"
   
+
+entrez2symb_dt <- read.delim(file.path(setDir,
+                                       "/mnt/ed4/marie/entrez2synonym/entrez/ENTREZ_POS/gff_entrez_position_GRCh37p13_nodup.txt"),
+                             header=T, stringsAsFactors = FALSE)
+entrez2symb_dt$entrezID <- as.character(entrez2symb_dt$entrezID)
+
+
+
 # sort the TADs by decreasing withinCoexpr
 # plot level of coexpr within and between on the same plot
 
@@ -207,53 +219,85 @@ stopifnot(!is.na(tad_coexpr_fc_DT$cmpCol))
 outFile <- file.path(outFolder, "tad_coexpr_fc_DT.Rdata")
 save(tad_coexpr_fc_DT, file = outFile)
 cat(paste0("... written: ", outFile, "\n"))
+# load(outFile)
+
+
+
+tad_coexpr_fc_DT$withinCoexpr_rank <- rank(-tad_coexpr_fc_DT$withinCoexpr, ties="min") # rank: highest rank = highest coexpr value
+tad_coexpr_fc_DT$meanFC_rank <- rank(-abs(tad_coexpr_fc_DT$meanFC), ties="min") # rank: highest rank = highest coexpr value
+tad_coexpr_fc_DT$withinCoexpr_meanFC_avgRank <- (tad_coexpr_fc_DT$withinCoexpr_rank+tad_coexpr_fc_DT$meanFC_rank)/2
+
+
+
 
 
 #################################################################
 ################################################################# HIGH FC and HIGH WITHIN COEXPR
 #################################################################
 
+# iterate
+# subset_vars (subsetVar) -> subset_levels (var) -> rankingVars (rank_var)
 
-# by cmpTypes
-all_cmps <- unique(tad_coexpr_fc_DT$cmpType)
-
-
+subset_vars <- c("cmpType", "all")
+# cmpType = subtypes/norm vs tumor/wt vs mut
 rankingVars <- c("withinCoexpr_rank", "meanFC_rank", "withinCoexpr_meanFC_avgRank")
-
 nTop <- 5
 
+#### > START ITERATING AND OUTPUTING
 
-cmp=all_cmps[1]
-for(cmp in all_cmps){
-  
-  cmp_DT <- tad_coexpr_fc_DT[tad_coexpr_fc_DT$cmps == cmp,]
-  
-  cmp_DT$withinCoexpr_rank <- rank(-cmp_DT$withinCoexpr, ties="min") # rank: highest rank = highest coexpr value
-  cmp_DT$meanFC_rank <- rank(-abs(cmp_DT$meanFC), ties="min") # rank: highest rank = highest coexpr value
-  
-  cmp_DT$withinCoexpr_meanFC_avgRank <- (cmp_DT$withinCoexpr_rank+cmp_DT$meanFC_rank)/2
-  
-  # plot(
-  #   x= cmp_DT$withinCoexpr_rank,
-  #   y= cmp_DT$meanFC_rank
-  # )
-  
-  for(var in rankingVars) {
-    
-    
-    
-    
-    
+
+subsetVar = subset_vars[1]
+for(subsetVar in subset_vars) {
+  if(subsetVar == "all") {
+    subset_levels <- ""
+  } else {
+    subset_levels <- unique(tad_coexpr_fc_DT[, subsetVar])  
   }
-  
-  
-}
-
-
-
-
-
-
+  var = subset_levels[1]
+  for(var in subset_levels) {
+    if(subsetVar == "all") {
+      stopifnot(var == "")
+      curr_DT <- tad_coexpr_fc_DT
+    } else {
+        curr_DT <- tad_coexpr_fc_DT[tad_coexpr_fc_DT[, paste0(subsetVar)] == var,]
+    }
+    stopifnot(nrow(curr_DT) > 0)
+    rank_var = rankingVars[1]
+    for(rank_var in rankingVars){
+      stopifnot(rank_var %in% colnames(curr_DT))
+      ranked_curr_DT <- curr_DT[order(curr_DT[,rank_var]),]
+      i=1
+      topTable_DT <- foreach(i = 1:nTop, .combine='rbind') %dopar% {
+        i_hicds <- dirname(ranked_curr_DT$dataset[i])
+        i_exprds <- basename(ranked_curr_DT$dataset[i])
+        i_tad <- basename(ranked_curr_DT$region[i])
+        tmpDT <- get_tad_symbols_DT(hicds = i_hicds,
+                           exprds = i_exprds,
+                           region = i_tad,
+                           mainPipFolder = pipOutFolder
+                           )
+        otherCols <- colnames(tmpDT)
+        tmpDT$iTop <- i
+        tmpDT[,c("iTop", otherCols)]
+      } # end-foreach iterating over the "n" top TADs
+      # subset_vars (subsetVar) -> subset_levels (var) -> rankingVars (rank_var)
+      outFile <- file.path(outFolder, paste0(subsetVar, "_", var, "_", rank_var, "_nTop", nTop, ".txt" ))
+      cat(outFile, "\n")
+      write.table(topTable_DT, col.names=TRUE, row.names=FALSE, sep="\t", append=FALSE, quote=FALSE, file = outFile)
+      cat(paste0("... written: ", outFile, "\n"))
+      
+      
+      # source("plot_lolliTAD_funct.R")
+      # plot_lolliTAD_ds(exprds = i_exprds, 
+      #                  hicds = i_hicds,
+      #                  all_TADs = i_tad, 
+      #                  orderByLolli = "startPos")
+        
+        
+      
+    } # end-for iterating over rankingVar # => rank_var in rankingVars (e.g. "withinCoexpr_rank")
+  } # end-for iterating over levels of data subset #   for(var in subset_levels) (e.g. "subtypes")
+} # end-for iterating over subset data # for(subsetVar in subset_vars) (e.g. "cmpType")
 
 
 
@@ -263,7 +307,7 @@ for(cmp in all_cmps){
 # ######################################################################################
 # ######################################################################################
 # ######################################################################################
-cat("*** DONE\n")
+cat(paste0("*** DONE: ", script_name, "\n"))
 cat(paste0(startTime, "\n", Sys.time(), "\n"))
 
 
