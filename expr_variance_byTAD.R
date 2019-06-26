@@ -4,6 +4,8 @@ buildTable <- FALSE
 
 cat("> START: expr_variance_byTAD.R\n")
 
+script_name <- "expr_variance_byTAD.R"
+
 SSHFS <- FALSE
 setDir <- ifelse(SSHFS, "/media/electron", "")
 
@@ -90,7 +92,7 @@ stopifnot(dir.exists(auc_coexprdist_fold))
 outFold <- file.path(paste0("EXPR_VARIANCE_BYTAD"), toupper(exprType))
 dir.create(outFold, recursive = TRUE)
 
-plotType <- "svg"
+plotType <- "png"
 myHeight <- ifelse(plotType == "png", 400, 7)
 myWidth <- ifelse(plotType == "png", 400, 7)
 
@@ -354,8 +356,236 @@ names(all_ds_geneVarDT_noTAD) <- names(all_ds_geneVarDT)
 all_ds_geneVarDT <- do.call(rbind, lapply(all_ds_geneVarDT_noTAD, data.frame)) # otherwise the columns remain as lists !
 
 
+
+
+all_ds_geneVarDT_onlyTAD <- lapply(all_ds_geneVar_with_TAD_data, function(x) {
+  toKeep <-  names(x) %in% c("tadMeanVar", "tadMeanVar_cond1", "tadMeanVar_cond2")
+  x[toKeep]
+})
+names(all_ds_geneVarDT_onlyTAD) <- names(all_ds_geneVar_with_TAD_data)
+
+
+# all_ds_geneVarDT <- data.frame(do.call(rbind, all_ds_geneVarDT_noTAD))
+all_ds_geneVar_onlyTAD_DT <- do.call(rbind, lapply(all_ds_geneVarDT_onlyTAD, data.frame)) # otherwise the columns remain as lists !
+
+all_ds_geneVar_onlyTAD_DT$hicds <- gsub("^(.+)_TCGA.+", "\\1", rownames(all_ds_geneVar_onlyTAD_DT))
+all_ds_geneVar_onlyTAD_DT$exprds <- gsub("^.+_(TCGA.+)\\.chr.+", "\\1", rownames(all_ds_geneVar_onlyTAD_DT))
+all_ds_geneVar_onlyTAD_DT$region <- gsub("^.+_TCGA.+\\.(chr.+$)", "\\1", rownames(all_ds_geneVar_onlyTAD_DT))
+
 # stop("--ok")
 # load("GENE_VARIANCE/LOG2FPKM/all_ds_geneVarDT.Rdata")
+
+
+subTypeDT <- data.frame(exprds=names(cancer_subAnnot), subtype=cancer_subAnnot, stringsAsFactors = FALSE)
+colorDT <- data.frame(exprds=names(dataset_proc_colors), color=dataset_proc_colors, stringsAsFactors = FALSE)
+stopifnot(all_ds_geneVar_onlyTAD_DT$exprds %in% subTypeDT$exprds)
+stopifnot(all_ds_geneVar_onlyTAD_DT$exprds %in% colorDT$exprds)
+
+
+
+
+subtype_data_DT <- unique(merge(merge(all_ds_geneVar_onlyTAD_DT, subTypeDT, by="exprds", all.x=T, all.y=F), 
+                                colorDT, by="exprds", all.x=T, all.y=F))
+
+stopifnot(!is.na(subtype_data_DT))
+
+stopifnot(nrow(all_ds_geneVarDT) == nrow(subtype_data_DT))
+
+dsByType <- table(unique(subtype_data_DT[, c("exprds", "subtype")])$subtype)
+nDSbyType <- setNames(as.numeric(dsByType), names(dsByType))
+subTit <- paste0("# DS: ", paste0(names(nDSbyType), "=", as.numeric(nDSbyType), collapse = " - "))
+
+
+##########################################################################################
+##########################################################################################
+
+subtypeDT <- subtype_data_DT[subtype_data_DT$subtype == "subtypes",]
+stopifnot(nrow(subtypeDT) > 0)
+
+myTit <- "TAD variance by condition"
+mySub <- "(subtype datasets only)"
+outFile <- file.path(outFold, paste0("multidens_subtypes_compCond", ".", plotType))
+do.call(plotType, list(outFile, height=myHeight, width=myWidth))
+plot_multiDens( 
+  list(
+    tadMeanVar = subtypeDT[,"tadMeanVar"],
+    tadMeanVar_cond1 = subtypeDT[,"tadMeanVar_cond1"],
+    tadMeanVar_cond2 = subtypeDT[,"tadMeanVar_cond2"]
+  ),
+  my_xlab = "TAD mean variance",
+  plotTit = myTit
+)
+mtext(side=3, text=mySub)
+foo <- dev.off() 
+cat(paste0("... written: ", outFile, "\n"))
+
+outFile <- file.path(outFold, paste0("multidens_subtypes_compCond_log10", ".", plotType))
+do.call(plotType, list(outFile, height=myHeight, width=myWidth))
+plot_multiDens( 
+  list(
+    tadMeanVar = log10(subtypeDT[,"tadMeanVar"]),
+    tadMeanVar_cond1 = log10(subtypeDT[,"tadMeanVar_cond1"]),
+    tadMeanVar_cond2 = log10(subtypeDT[,"tadMeanVar_cond2"])
+  ),
+  my_xlab = "TAD mean variance",
+  plotTit = myTit
+)
+mtext(side=3, text=mySub)
+foo <- dev.off() 
+cat(paste0("... written: ", outFile, "\n"))
+
+##########################################################################################
+##########################################################################################
+
+mutDT <- subtype_data_DT[subtype_data_DT$subtype == "mutation",]
+stopifnot(nrow(mutDT) > 0)
+
+
+myTit <- "TAD variance by condition"
+mySub <- "(mutation datasets only)"
+outFile <- file.path(outFold, paste0("multidens_mutation_compCond", ".", plotType))
+do.call(plotType, list(outFile, height=myHeight, width=myWidth))
+plot_multiDens( 
+  list(
+    tadMeanVar = mutDT[,"tadMeanVar"],
+    tadMeanVar_cond1 = mutDT[,"tadMeanVar_cond1"],
+    tadMeanVar_cond2 = mutDT[,"tadMeanVar_cond2"]
+  ),
+  my_xlab = "TAD mean variance",
+  plotTit = myTit
+)
+mtext(side=3, text=mySub)
+foo <- dev.off() 
+cat(paste0("... written: ", outFile, "\n"))
+
+outFile <- file.path(outFold, paste0("multidens_mutation_compCond", "_log10.", plotType))
+do.call(plotType, list(outFile, height=myHeight, width=myWidth))
+plot_multiDens( 
+  list(
+    tadMeanVar = log10(mutDT[,"tadMeanVar"]),
+    tadMeanVar_cond1 = log10(mutDT[,"tadMeanVar_cond1"]),
+    tadMeanVar_cond2 = log10(mutDT[,"tadMeanVar_cond2"])
+  ),
+  my_xlab = "TAD mean variance",
+  plotTit = myTit
+)
+mtext(side=3, text=mySub)
+foo <- dev.off() 
+cat(paste0("... written: ", outFile, "\n"))
+
+
+
+##########################################################################################
+##########################################################################################
+normalDT <- subtype_data_DT[subtype_data_DT$subtype == "vs_normal",]
+stopifnot(nrow(normalDT) > 0)
+
+myTit <- "TAD variance by condition"
+mySub <- "(vs_normal datasets only)"
+outFile <- file.path(outFold, paste0("multidens_vs_normal_compCond", ".", plotType))
+do.call(plotType, list(outFile, height=myHeight, width=myWidth))
+plot_multiDens( 
+  list(
+    tadMeanVar = normalDT[,"tadMeanVar"],
+    tadMeanVar_cond1 = normalDT[,"tadMeanVar_cond1"],
+    tadMeanVar_cond2 = normalDT[,"tadMeanVar_cond2"]
+  ),
+  my_xlab = "TAD mean variance",
+  plotTit = myTit
+)
+mtext(side=3, text=mySub)
+foo <- dev.off() 
+cat(paste0("... written: ", outFile, "\n"))
+
+outFile <- file.path(outFold, paste0("multidens_vs_normal_compCond", "_log10.", plotType))
+do.call(plotType, list(outFile, height=myHeight, width=myWidth))
+plot_multiDens( 
+  list(
+    tadMeanVar = log10(normalDT[,"tadMeanVar"]),
+    tadMeanVar_cond1 = log10(normalDT[,"tadMeanVar_cond1"]),
+    tadMeanVar_cond2 = log10(normalDT[,"tadMeanVar_cond2"])
+  ),
+  my_xlab = "TAD mean variance",
+  plotTit = myTit
+)
+mtext(side=3, text=mySub)
+foo <- dev.off() 
+cat(paste0("... written: ", outFile, "\n"))
+
+##########################################################################################
+##########################################################################################
+for(mytransf in c("normal", "log10")){
+  
+  mysuffix <- ifelse(mytransf=="normal", "", "_log10")
+  mysuffixLab <- ifelse(mytransf=="normal", "", " [log10] ")
+  for(myvar in c("tadMeanVar", "tadMeanVar_cond1", "tadMeanVar_cond2")){
+    
+    myTit <- ifelse(mytransf == "normal", 
+                    paste0(myvar, " by categories"),
+                    paste0(myvar, " (log10) by categories"))
+    
+    outFile <- file.path(outFold, paste0("multidens_bySubtypes_", myvar, mysuffix, ".", plotType))
+    do.call(plotType, list(outFile, height=myHeight, width=myWidth))
+    plot_multiDens_setcols(
+      lapply(split(subtype_data_DT, subtype_data_DT$subtype), function(x) {
+        tmp <- x[[myvar]]
+        if(mytransf == "log10") tmp <- log10(tmp)
+        tmp
+      }),
+      my_cols = cancer_subColors[as.character(levels(as.factor(subtype_data_DT$subtype)))],
+      my_xlab = paste0(myvar),
+      plotTit = myTit
+    )
+    mtext(side=3, text=subTit)
+    foo <- dev.off() 
+    cat(paste0("... written: ", outFile, "\n"))
+  } 
+}
+
+##########################################################################################
+##########################################################################################
+
+##########################################################################################
+##########################################################################################
+for(mytransf in c("normal", "log10")){
+  
+  mysuffix <- ifelse(mytransf=="normal", "", "_log10")
+  mysuffixLab <- ifelse(mytransf=="normal", "", " [log10] ")
+  for(myvar in c("tadMeanVar", "tadMeanVar_cond1", "tadMeanVar_cond2")){
+    
+    myTit <- ifelse(mytransf == "normal", 
+                    paste0(myvar, " by categories"),
+                    paste0(myvar, " (log10) by categories"))
+    
+    outFile <- file.path(outFold, paste0("multidens_bySubtypes_", myvar, mysuffix, ".", plotType))
+    do.call(plotType, list(outFile, height=myHeight, width=myWidth))
+    plot_multiDens_setcols(
+      lapply(split(subtype_data_DT, subtype_data_DT$subtype), function(x) {
+        tmp <- x[[myvar]]
+        if(mytransf == "log10") tmp <- log10(tmp)
+        tmp
+      }),
+      my_cols = cancer_subColors[as.character(levels(as.factor(subtype_data_DT$subtype)))],
+      my_xlab = paste0(myvar),
+      plotTit = myTit
+    )
+    mtext(side=3, text=subTit)
+    foo <- dev.off() 
+    cat(paste0("... written: ", outFile, "\n"))
+  } 
+}
+
+##########################################################################################
+##########################################################################################
+
+
+
+################
+cat("*** DONE - ", script_name, "\n")
+cat(paste0(startTime, "\n", Sys.time(), "\n"))
+
+stop("---ok\n")
+## REMAINING NOT MEANINGFUL AT THE TAD LEVEL
 
 ########################################################################################## RETRIEVE FCC AND COEXPRDIST
 ##########################################################################################

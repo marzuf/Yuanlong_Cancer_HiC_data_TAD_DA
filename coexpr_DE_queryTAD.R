@@ -20,8 +20,12 @@ source("subtype_cols.R")
 
 source("look_tads_fct.R")
 
+source("plot_lolliTAD_funct.R")
+
+nTop <- 10
+
 plotType <- "png"
-myHeight <- ifelse(plotType=="png", 500, 7)
+myHeight <- ifelse(plotType=="png", 400, 7)
 myWidth <- myHeight
 plotCex <- 1.4
 
@@ -223,8 +227,17 @@ cat(paste0("... written: ", outFile, "\n"))
 
 
 
-tad_coexpr_fc_DT$withinCoexpr_rank <- rank(-tad_coexpr_fc_DT$withinCoexpr, ties="min") # rank: highest rank = highest coexpr value
 tad_coexpr_fc_DT$meanFC_rank <- rank(-abs(tad_coexpr_fc_DT$meanFC), ties="min") # rank: highest rank = highest coexpr value
+
+
+tad_coexpr_fc_DT$withinBetweenDiffNbr_rank <- rank(-tad_coexpr_fc_DT$withinBetweenDiffNbr, ties = "min") # rank: highest rank = highest coexpr value
+tad_coexpr_fc_DT$withinBetweenDiffNbr_meanFC_avgRank <- (tad_coexpr_fc_DT$withinBetweenDiffNbr_rank+tad_coexpr_fc_DT$meanFC_rank)/2
+
+tad_coexpr_fc_DT$withinBetweenDiffKb_rank <- rank(-tad_coexpr_fc_DT$withinBetweenDiffKb, ties = "min") # rank: highest rank = highest coexpr value
+tad_coexpr_fc_DT$withinBetweenDiffKb_meanFC_avgRank <- (tad_coexpr_fc_DT$withinBetweenDiffKb_rank+tad_coexpr_fc_DT$meanFC_rank)/2
+
+
+tad_coexpr_fc_DT$withinCoexpr_rank <- rank(-tad_coexpr_fc_DT$withinCoexpr, ties="min") # rank: highest rank = highest coexpr value
 tad_coexpr_fc_DT$withinCoexpr_meanFC_avgRank <- (tad_coexpr_fc_DT$withinCoexpr_rank+tad_coexpr_fc_DT$meanFC_rank)/2
 
 
@@ -240,8 +253,12 @@ tad_coexpr_fc_DT$withinCoexpr_meanFC_avgRank <- (tad_coexpr_fc_DT$withinCoexpr_r
 
 subset_vars <- c("cmpType", "all")
 # cmpType = subtypes/norm vs tumor/wt vs mut
-rankingVars <- c("withinCoexpr_rank", "meanFC_rank", "withinCoexpr_meanFC_avgRank")
-nTop <- 5
+rankingVars <- c( "meanFC_rank",
+                  "withinCoexpr_rank", "withinCoexpr_meanFC_avgRank",
+                  "withinBetweenDiffNbr_rank", "withinBetweenDiffNbr_meanFC_avgRank",
+                  "withinBetweenDiffKb_rank", "withinBetweenDiffKb_meanFC_avgRank",
+                  "withinCoexpr_rank", "withinCoexpr_meanFC_avgRank")
+
 
 #### > START ITERATING AND OUTPUTING
 
@@ -266,11 +283,52 @@ for(subsetVar in subset_vars) {
     for(rank_var in rankingVars){
       stopifnot(rank_var %in% colnames(curr_DT))
       ranked_curr_DT <- curr_DT[order(curr_DT[,rank_var]),]
+      
+      
+      outFile <- file.path(outFolder, paste0(subsetVar, "_", var, "_", rank_var, "_nTop", nTop, "_densplot.", plotType ))
+      do.call(plotType, list(outFile, height=myHeight, width=myWidth))
+      densplot(
+        y = curr_DT$withinCoexpr,
+        x = curr_DT$meanFC,
+        cex.lab=myCexLab,
+        cex.axis=myCexAxis,
+        ylab="withinCoexpr",
+        xlab = "meanFC",
+        cex = 0.5,
+        main = paste0(subsetVar, " - ", var, " - ", rank_var)
+      )
+      points(x = ranked_curr_DT$meanFC[1:nTop],
+             y = ranked_curr_DT$withinCoexpr[1:nTop],
+            pch = 4,
+            col="red",
+            cex=1.5
+             )
+      text(x = ranked_curr_DT$meanFC[1:nTop],
+             y = ranked_curr_DT$withinCoexpr[1:nTop],
+           labels = paste0(ranked_curr_DT$dataset[1:nTop],"\n", ranked_curr_DT$region[1:nTop]),
+             pch = 4,
+             col="red",
+             cex=0.7
+      )
+      foo <- dev.off()
+      cat(paste0("... written: ", outFile, "\n"))
+      
+      
       i=1
-      topTable_DT <- foreach(i = 1:nTop, .combine='rbind') %dopar% {
+      # topTable_DT <- foreach(i = 1:nTop, .combine='rbind') %dopar% {
+      plotList <- list()
+        topTable_DT <- foreach(i = 1:nTop, .combine='rbind') %do% {
         i_hicds <- dirname(ranked_curr_DT$dataset[i])
         i_exprds <- basename(ranked_curr_DT$dataset[i])
         i_tad <- basename(ranked_curr_DT$region[i])
+        
+        
+        plotList[[i]] <- plot_lolliTAD_ds(exprds = i_exprds,
+                         hicds = i_hicds,
+                         all_TADs = i_tad,
+                         orderByLolli = "startPos")
+        
+        
         tmpDT <- get_tad_symbols_DT(hicds = i_hicds,
                            exprds = i_exprds,
                            region = i_tad,
@@ -286,13 +344,18 @@ for(subsetVar in subset_vars) {
       write.table(topTable_DT, col.names=TRUE, row.names=FALSE, sep="\t", append=FALSE, quote=FALSE, file = outFile)
       cat(paste0("... written: ", outFile, "\n"))
       
+      mytit <- paste0(subsetVar, " - ", var, " - ", rank_var, " - ", nTop)
+      all_plots <- do.call(grid.arrange, c(plotList,  list(ncol=ifelse(nTop == 1, 1, 2), top=textGrob(mytit, gp=gpar(fontsize=20,font=2)))))
       
-      # source("plot_lolliTAD_funct.R")
-      # plot_lolliTAD_ds(exprds = i_exprds, 
-      #                  hicds = i_hicds,
-      #                  all_TADs = i_tad, 
-      #                  orderByLolli = "startPos")
-        
+
+      outFile <- file.path(outFolder, paste0(subsetVar, "_", var, "_", rank_var, "_nTop", nTop, ".", plotType ))
+      
+      outWidthGG <- 20
+      outHeightGG <- min(c(7 * nTop/2, 49))
+      
+      ggsave(filename = outFile, all_plots, width=outWidthGG, height = outHeightGG)
+      cat("... written: ", outFile, "\n")
+      
         
       
     } # end-for iterating over rankingVar # => rank_var in rankingVars (e.g. "withinCoexpr_rank")
