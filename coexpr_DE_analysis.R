@@ -40,6 +40,8 @@ stopifnot(dir.exists(pipOutFolder))
 all_fc_files <- list.files(pipOutFolder, recursive = TRUE, pattern="all_meanLogFC_TAD.Rdata", full.names = FALSE)
 stopifnot(length(all_fc_files) > 0)
 
+all_pvalcomb_files <- list.files(pipOutFolder, recursive = TRUE, pattern="emp_pval_combined.Rdata", full.names = FALSE)
+stopifnot(length(all_pvalcomb_files) > 0)
 
 dataFile <- file.path(dataFolder, "allData_within_between_coexpr.Rdata")
 stopifnot(file.exists(dataFile))
@@ -51,6 +53,8 @@ stopifnot(length(all_domainScore_files) > 0)
 all_ratioDown_files <- list.files(pipOutFolder, recursive = TRUE, pattern="all_obs_ratioDown.Rdata", full.names = FALSE)
 stopifnot(length(all_ratioDown_files) > 0)
 
+stopifnot(length(all_ratioDown_files) == length(all_fc_files))
+stopifnot(length(all_fc_files) == length(all_pvalcomb_files) )
   
 # sort the TADs by decreasing withinCoexpr
 # plot level of coexpr within and between on the same plot
@@ -138,7 +142,33 @@ fc_DT <- foreach(fc_file = all_fc_files, .combine = 'rbind') %dopar% {
 }
 
 
-fc_rd_DT <- merge(rD_DT, fc_DT, by=c("dataset", "region"))
+### BUILD THE LOGFC TABLE
+pvalcomb_file = all_pvalcomb_files[1]
+pvalcomb_DT <- foreach(pvalcomb_file = all_pvalcomb_files, .combine = 'rbind') %dopar% {
+  curr_file <- file.path(pipOutFolder, pvalcomb_file)
+  stopifnot(file.exists(curr_file))
+  tad_pvalcomb <- eval(parse(text = load(curr_file)))
+  # adj pval comb
+  adj_tad_pvalcomb <- p.adjust(tad_pvalcomb, method="BH")
+  dataset <- dirname(dirname(pvalcomb_file))
+  data.frame(
+    dataset = dataset,
+    region = names(adj_tad_pvalcomb),
+    adjPvalComb = as.numeric(adj_tad_pvalcomb),
+    stringsAsFactors = FALSE
+  )
+}
+
+
+
+############################################################################## MERGE THE TABLES
+
+fc_adjpval_DT <- merge(pvalcomb_DT, fc_DT, by=c("dataset", "region"))
+stopifnot(nrow(fc_adjpval_DT) == nrow(fc_DT))
+stopifnot(nrow(fc_DT) == nrow(pvalcomb_DT))
+stopifnot(!is.na(fc_adjpval_DT))
+
+fc_rd_DT <- merge(rD_DT, fc_adjpval_DT, by=c("dataset", "region"))
 stopifnot(nrow(fc_rd_DT) == nrow(rD_DT))
 stopifnot(nrow(fc_DT) == nrow(rD_DT))
 stopifnot(!is.na(fc_rd_DT))
@@ -185,6 +215,8 @@ tad_coexpr_fc_DT$withinBetwNbrCond1LogFC <- log10(tad_coexpr_fc_DT$withinCoexpr_
 tad_coexpr_fc_DT$withinBetwNbrCond2LogFC <- log10(tad_coexpr_fc_DT$withinCoexpr_cond2/tad_coexpr_fc_DT$betweenNbrCoexpr_cond2)
 
 tad_coexpr_fc_DT$withinCond2WithinCond1LogFC <- log10(tad_coexpr_fc_DT$withinCoexpr_cond2/tad_coexpr_fc_DT$withinCoexpr_cond1)
+
+tad_coexpr_fc_DT$adjPvalComb_log10 <- -log10(tad_coexpr_fc_DT$adjPvalComb)
 
 
 # for each, plot i) densplot; ii) plot with color for subtypes
@@ -268,6 +300,38 @@ myplot_colplot <- function(xvar, yvar, mycols, addCurve = FALSE) {
 }
 
 mycols <- tad_coexpr_fc_DT$cmpCol
+
+##########################
+### adj. pval. combined and withinCoexpr diff cond1 cond2
+##########################
+
+yvar <- "adjPvalComb_log10"
+xvar <- "withinDiffCond1Cond2"
+
+myplot_densplot(xvar,yvar)
+myplot_colplot(xvar,yvar,mycols)
+
+##########################
+### adj. pval. combined and withinBetweenCoexpr diff (kb)
+##########################
+
+yvar <- "adjPvalComb_log10"
+xvar <- "withinBetweenDiffKb"
+
+myplot_densplot(xvar,yvar)
+myplot_colplot(xvar,yvar,mycols)
+
+
+##########################
+### adj. pval. combined and withinBetweenCoexpr diff (nbr)
+##########################
+
+yvar <- "adjPvalComb_log10"
+xvar <- "withinBetweenDiffNbr"
+
+myplot_densplot(xvar,yvar)
+myplot_colplot(xvar,yvar,mycols)
+
 
 ##########################
 ### detect "disruption" and DE: those with high FC in expression and high FC in coexpression => FC coexpr vs. FC expr.

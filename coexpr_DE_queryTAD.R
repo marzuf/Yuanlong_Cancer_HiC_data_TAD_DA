@@ -22,7 +22,7 @@ source("look_tads_fct.R")
 
 source("plot_lolliTAD_funct.R")
 
-nTop <- 10
+nTop <- 5
 
 plotType <- "png"
 myHeight <- ifelse(plotType=="png", 400, 7)
@@ -36,7 +36,7 @@ windowSizeBp <- 500*10^3
 options(scipen=100)
 
 
-outFolder <- "COEXPR_DE_QUERYTAD"
+outFolder <- paste0("COEXPR_DE_QUERYTAD_", nTop)
 dir.create(outFolder, recursive=TRUE)
 
 dataFolder <- "COEXPR_BETWEEN_WITHIN_ALL"

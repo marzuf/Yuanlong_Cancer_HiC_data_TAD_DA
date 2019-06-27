@@ -356,8 +356,6 @@ names(all_ds_geneVarDT_noTAD) <- names(all_ds_geneVarDT)
 all_ds_geneVarDT <- do.call(rbind, lapply(all_ds_geneVarDT_noTAD, data.frame)) # otherwise the columns remain as lists !
 
 
-
-
 all_ds_geneVarDT_onlyTAD <- lapply(all_ds_geneVar_with_TAD_data, function(x) {
   toKeep <-  names(x) %in% c("tadMeanVar", "tadMeanVar_cond1", "tadMeanVar_cond2")
   x[toKeep]
@@ -391,7 +389,7 @@ stopifnot(!is.na(subtype_data_DT))
 
 stopifnot(nrow(all_ds_geneVarDT) == nrow(subtype_data_DT))
 
-dsByType <- table(unique(subtype_data_DT[, c("exprds", "subtype")])$subtype)
+dsByType <- table(unique(subtype_data_DT[, c("exprds", "hicds","subtype")])$subtype)
 nDSbyType <- setNames(as.numeric(dsByType), names(dsByType))
 subTit <- paste0("# DS: ", paste0(names(nDSbyType), "=", as.numeric(nDSbyType), collapse = " - "))
 
@@ -402,8 +400,9 @@ subTit <- paste0("# DS: ", paste0(names(nDSbyType), "=", as.numeric(nDSbyType), 
 subtypeDT <- subtype_data_DT[subtype_data_DT$subtype == "subtypes",]
 stopifnot(nrow(subtypeDT) > 0)
 
+nds <- length(unique(paste0(subtypeDT$exprds, subtypeDT$hicds)))
 myTit <- "TAD variance by condition"
-mySub <- "(subtype datasets only)"
+mySub <- paste0("(cancer_subtypes datasets only; n=", nds, ")")
 outFile <- file.path(outFold, paste0("multidens_subtypes_compCond", ".", plotType))
 do.call(plotType, list(outFile, height=myHeight, width=myWidth))
 plot_multiDens( 
@@ -412,6 +411,7 @@ plot_multiDens(
     tadMeanVar_cond1 = subtypeDT[,"tadMeanVar_cond1"],
     tadMeanVar_cond2 = subtypeDT[,"tadMeanVar_cond2"]
   ),
+  legPos="topleft",
   my_xlab = "TAD mean variance",
   plotTit = myTit
 )
@@ -427,6 +427,7 @@ plot_multiDens(
     tadMeanVar_cond1 = log10(subtypeDT[,"tadMeanVar_cond1"]),
     tadMeanVar_cond2 = log10(subtypeDT[,"tadMeanVar_cond2"])
   ),
+  legPos="topleft",
   my_xlab = "TAD mean variance",
   plotTit = myTit
 )
@@ -440,9 +441,9 @@ cat(paste0("... written: ", outFile, "\n"))
 mutDT <- subtype_data_DT[subtype_data_DT$subtype == "mutation",]
 stopifnot(nrow(mutDT) > 0)
 
-
+nds <- length(unique(paste0(mutDT$exprds, mutDT$hicds)))
 myTit <- "TAD variance by condition"
-mySub <- "(mutation datasets only)"
+mySub <- paste0("(wt_vs_mut datasets only; n=", nds, ")")
 outFile <- file.path(outFold, paste0("multidens_mutation_compCond", ".", plotType))
 do.call(plotType, list(outFile, height=myHeight, width=myWidth))
 plot_multiDens( 
@@ -451,6 +452,7 @@ plot_multiDens(
     tadMeanVar_cond1 = mutDT[,"tadMeanVar_cond1"],
     tadMeanVar_cond2 = mutDT[,"tadMeanVar_cond2"]
   ),
+  legPos="topleft",
   my_xlab = "TAD mean variance",
   plotTit = myTit
 )
@@ -466,6 +468,7 @@ plot_multiDens(
     tadMeanVar_cond1 = log10(mutDT[,"tadMeanVar_cond1"]),
     tadMeanVar_cond2 = log10(mutDT[,"tadMeanVar_cond2"])
   ),
+  legPos="topleft",
   my_xlab = "TAD mean variance",
   plotTit = myTit
 )
@@ -480,8 +483,9 @@ cat(paste0("... written: ", outFile, "\n"))
 normalDT <- subtype_data_DT[subtype_data_DT$subtype == "vs_normal",]
 stopifnot(nrow(normalDT) > 0)
 
+nds <- length(unique(paste0(normalDT$exprds, normalDT$hicds)))
 myTit <- "TAD variance by condition"
-mySub <- "(vs_normal datasets only)"
+mySub <- paste0("(norm_vs_tumor datasets only; n=", nds, ")")
 outFile <- file.path(outFold, paste0("multidens_vs_normal_compCond", ".", plotType))
 do.call(plotType, list(outFile, height=myHeight, width=myWidth))
 plot_multiDens( 
@@ -490,6 +494,7 @@ plot_multiDens(
     tadMeanVar_cond1 = normalDT[,"tadMeanVar_cond1"],
     tadMeanVar_cond2 = normalDT[,"tadMeanVar_cond2"]
   ),
+  legPos="topleft",
   my_xlab = "TAD mean variance",
   plotTit = myTit
 )
@@ -505,6 +510,7 @@ plot_multiDens(
     tadMeanVar_cond1 = log10(normalDT[,"tadMeanVar_cond1"]),
     tadMeanVar_cond2 = log10(normalDT[,"tadMeanVar_cond2"])
   ),
+  legPos="topleft",
   my_xlab = "TAD mean variance",
   plotTit = myTit
 )
@@ -534,6 +540,7 @@ for(mytransf in c("normal", "log10")){
       }),
       my_cols = cancer_subColors[as.character(levels(as.factor(subtype_data_DT$subtype)))],
       my_xlab = paste0(myvar),
+      legPos="topleft",
       plotTit = myTit
     )
     mtext(side=3, text=subTit)
@@ -567,6 +574,7 @@ for(mytransf in c("normal", "log10")){
       }),
       my_cols = cancer_subColors[as.character(levels(as.factor(subtype_data_DT$subtype)))],
       my_xlab = paste0(myvar),
+      legPos="topleft",
       plotTit = myTit
     )
     mtext(side=3, text=subTit)
