@@ -242,15 +242,15 @@ save(tad_coexpr_fc_DT, file = outFile)
 cat(paste0("... written: ", outFile, "\n"))
 
 
-myplot_densplot <- function(xvar, yvar, addCurve=FALSE) {
+myplot_densplot <- function(xvar, yvar, addCurve=FALSE, dt = tad_coexpr_fc_DT, outPrefix="") {
   
-  stopifnot(xvar %in% colnames(tad_coexpr_fc_DT))
-  myx <- tad_coexpr_fc_DT[,xvar]
-  stopifnot(yvar %in% colnames(tad_coexpr_fc_DT))
-  myy <- tad_coexpr_fc_DT[,yvar]
-  mycols <- tad_coexpr_fc_DT$cmpCol
+  stopifnot(xvar %in% colnames(dt))
+  myx <- dt[,xvar]
+  stopifnot(yvar %in% colnames(dt))
+  myy <- dt[,yvar]
+  mycols <- dt$cmpCol
   
-  outFile <- file.path(outFolder, paste0(yvar, "_vs_", xvar, "_densplot.", plotType))
+  outFile <- file.path(outFolder, paste0(outPrefix, "", yvar, "_vs_", xvar, "_densplot.", plotType))
   do.call(plotType, list(outFile, height=myHeight, width=myWidth))
   densplot(y=myy,
            x=myx,
@@ -270,14 +270,14 @@ myplot_densplot <- function(xvar, yvar, addCurve=FALSE) {
   cat(paste0("... written: ", outFile, "\n"))
 }
 
-myplot_colplot <- function(xvar, yvar, mycols, addCurve = FALSE) {
+myplot_colplot <- function(xvar, yvar, mycols, addCurve = FALSE, dt = tad_coexpr_fc_DT, outPrefix="") {
   
-  stopifnot(xvar %in% colnames(tad_coexpr_fc_DT))
-  myx <- tad_coexpr_fc_DT[,xvar]
-  stopifnot(yvar %in% colnames(tad_coexpr_fc_DT))
-  myy <- tad_coexpr_fc_DT[,yvar]
+  stopifnot(xvar %in% colnames(dt))
+  myx <- dt[,xvar]
+  stopifnot(yvar %in% colnames(dt))
+  myy <- dt[,yvar]
   
-  outFile <- file.path(outFolder, paste0(yvar, "_vs_", xvar, "_colplot.", plotType))
+  outFile <- file.path(outFolder, paste0(outPrefix, "", yvar, "_vs_", xvar, "_colplot.", plotType))
   do.call(plotType, list(outFile, height=myHeight, width=myWidth))
   plot(y=myy,
            x=myx,
@@ -365,6 +365,24 @@ xvar <- "withinCoexpr_cond1"
 myplot_densplot(xvar,yvar, addCurve = TRUE)
 myplot_colplot(xvar,yvar,mycols, addCurve = TRUE)
 
+mycols_sub <- tad_coexpr_fc_DT$cmpCol[tad_coexpr_fc_DT$cmpType == "subtypes"]
+mycols_tumor <- tad_coexpr_fc_DT$cmpCol[tad_coexpr_fc_DT$cmpType == "norm_vs_tumor"]
+mycols_mut <- tad_coexpr_fc_DT$cmpCol[tad_coexpr_fc_DT$cmpType == "wt_vs_mut"]
+
+myplot_densplot(xvar,yvar, addCurve = TRUE, 
+                dt = tad_coexpr_fc_DT[tad_coexpr_fc_DT$cmpType == "subtypes",] , outPrefix = "subtypes_")
+myplot_colplot(xvar,yvar,mycols_sub, addCurve = TRUE,
+               dt = tad_coexpr_fc_DT[tad_coexpr_fc_DT$cmpType == "subtypes",] , outPrefix = "subtypes_")
+
+myplot_densplot(xvar,yvar, addCurve = TRUE, 
+                dt = tad_coexpr_fc_DT[tad_coexpr_fc_DT$cmpType == "norm_vs_tumor",] , outPrefix = "norm_vs_tumor_")
+myplot_colplot(xvar,yvar,mycols_tumor, addCurve = TRUE,
+               dt = tad_coexpr_fc_DT[tad_coexpr_fc_DT$cmpType == "norm_vs_tumor",] , outPrefix = "norm_vs_tumor_")
+
+myplot_densplot(xvar,yvar, addCurve = TRUE, 
+                dt = tad_coexpr_fc_DT[tad_coexpr_fc_DT$cmpType == "wt_vs_mut",] , outPrefix = "wt_vs_mut_")
+myplot_colplot(xvar,yvar,mycols_mut, addCurve = TRUE,
+               dt = tad_coexpr_fc_DT[tad_coexpr_fc_DT$cmpType == "wt_vs_mut",] , outPrefix = "wt_vs_mut_")
 
 
 ##########################
@@ -375,6 +393,22 @@ xvar <- "withinBetweenNbrDiffCond1"
 
 myplot_densplot(xvar,yvar, addCurve = TRUE)
 myplot_colplot(xvar,yvar,mycols, addCurve = TRUE)
+
+myplot_densplot(xvar,yvar, addCurve = TRUE, 
+                dt = tad_coexpr_fc_DT[tad_coexpr_fc_DT$cmpType == "subtypes",] , outPrefix = "subtypes_")
+myplot_colplot(xvar,yvar,mycols_sub, addCurve = TRUE,
+               dt = tad_coexpr_fc_DT[tad_coexpr_fc_DT$cmpType == "subtypes",] , outPrefix = "subtypes_")
+
+myplot_densplot(xvar,yvar, addCurve = TRUE, 
+                dt = tad_coexpr_fc_DT[tad_coexpr_fc_DT$cmpType == "norm_vs_tumor",] , outPrefix = "norm_vs_tumor_")
+myplot_colplot(xvar,yvar,mycols_tumor, addCurve = TRUE,
+               dt = tad_coexpr_fc_DT[tad_coexpr_fc_DT$cmpType == "norm_vs_tumor",] , outPrefix = "norm_vs_tumor_")
+
+myplot_densplot(xvar,yvar, addCurve = TRUE, 
+                dt = tad_coexpr_fc_DT[tad_coexpr_fc_DT$cmpType == "wt_vs_mut",] , outPrefix = "wt_vs_mut_")
+myplot_colplot(xvar,yvar,mycols_mut, addCurve = TRUE,
+               dt = tad_coexpr_fc_DT[tad_coexpr_fc_DT$cmpType == "wt_vs_mut",] , outPrefix = "wt_vs_mut_")
+
 
 ##########################
 ### detect coordinated change in expression and DE: those with high FC and high coexpr => coexpr vs. FC expr
