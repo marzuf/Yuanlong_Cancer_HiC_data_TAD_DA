@@ -9,7 +9,7 @@ cat("> START cosine_between_within_all.R \n")
 
 SSHFS <- FALSE
 
-buildData <- TRUE
+buildData <- FALSE
 
 require(tools)
 require(foreach)
@@ -79,8 +79,6 @@ aroundKbTADfile <- file.path("CREATE_SAMPLE_AROUNDKB_TADS", paste0(windowSizeBp)
 stopifnot(file.exists(aroundKbTADfile))
 all_ds_sample_aroundKb_TADs <- eval(parse(text = load(aroundKbTADfile)))
 
-
-coexprFiles =coexprFiles[1:2]
 
 coexprFilesOutNames <- coexprFiles
 
@@ -354,8 +352,8 @@ if(buildData) {
 }
 
 
-stop("---- ok\n")
-
+# stop("---- ok\n")
+cat("helloA\n")
 
 # sort the TADs by decreasing withinCoexpr
 # plot level of coexpr within and between on the same plot
@@ -395,7 +393,7 @@ tad_angDist_DT <- data.frame(
   stringsAsFactors = FALSE
 )
 
-
+cat("helloB\n")
 tad_angDist_DT$tadAngDistDiffCond1Cond2 <- (tad_angDist_DT$tad_meanAngDist_cond1 - tad_angDist_DT$tad_meanAngDist_cond2)
 
 tad_angDist_DT$tadAngDistRatioCond1Cond2 <- (tad_angDist_DT$tad_meanAngDist_cond1 / tad_angDist_DT$tad_meanAngDist_cond2)
@@ -406,7 +404,7 @@ tad_angDist_DT$allAngDistRatioCond1Cond2 <- (tad_angDist_DT$all_meanAngDist_cond
 
 tad_angDist_DT$tadAngDistChangeratioCond1Cond2 <- (tad_angDist_DT$tad_meanAngDist_cond2 - tad_angDist_DT$tad_meanAngDist_cond1)/tad_angDist_DT$tad_meanAngDist_cond1
 tad_angDist_DT$allAngDistChangeratioCond1Cond2 <- (tad_angDist_DT$all_meanAngDist_cond2 - tad_angDist_DT$all_meanAngDist_cond1)/tad_angDist_DT$all_meanAngDist_cond1
-
+cat("helloC\n")
 
 ### BUILD THE LOGFC TABLE
 fc_file = all_fc_files[1]
@@ -425,13 +423,15 @@ fc_DT <- foreach(fc_file = all_fc_files, .combine = 'rbind') %dopar% {
 
 tad_angDist_fc_DT <- merge(tad_angDist_DT, fc_DT, by=c("dataset", "region"))
 
-
+cat("helloD\n")
 ##### build the coexpr table
 
 coexprFolder <- "COEXPR_BETWEEN_WITHIN_ALL"
 coexprFile <- file.path(coexprFolder, "allData_within_between_coexpr.Rdata")
 stopifnot(file.exists(coexprFile))
-allData_within_between_coexpr <- eval(parse(text = load(outFile)))
+allData_within_between_coexpr <- eval(parse(text = load(coexprFile)))
+
+cat("helloE\n")
 
 tad_coexpr_DT <- data.frame(
   dataset = as.character(unlist(lapply(1:length(allData_within_between_coexpr), function(i) {
@@ -472,11 +472,9 @@ tad_coexpr_DT <- data.frame(
   stringsAsFactors = FALSE
 )
 
-tad_angDist_fc_coexpr_DT <- merge(
-  tad_angDist_fc_DT <- merge(tad_angDist_fc_DT, tad_coexpr_DT, by=c("dataset", "region"))
-)
+tad_angDist_fc_coexpr_DT <- merge(tad_angDist_fc_DT, tad_coexpr_DT, by=c("dataset", "region"))
 
-
+cat("helloF\n")
 
 tad_angDist_fc_coexpr_DT$withinDiffCond1Cond2 <- (tad_angDist_fc_coexpr_DT$withinCoexpr_cond1 - tad_angDist_fc_coexpr_DT$withinCoexpr_cond2)
 tad_angDist_fc_coexpr_DT$withinRatioCond1Cond2 <- (tad_angDist_fc_coexpr_DT$withinCoexpr_cond1 / tad_angDist_fc_coexpr_DT$withinCoexpr_cond2)
@@ -497,9 +495,9 @@ tad_angDist_fc_coexpr_DT$withinBetweenRatioKb <- (tad_angDist_fc_coexpr_DT$withi
 outFile <- file.path(outFolder, paste0("multidens_tad_meanAngDist.", plotType))
 do.call(plotType, list(outFile, height=myHeight, width=myHeight*1.2))
 plot_multiDens(list(
-  withinCoexpr = tad_angDist_DT[,"tad_meanAngDist"],
-  withinCoexpr_cond1 = tad_angDist_DT[,"tad_meanAngDist_cond1"],
-  withinCoexpr_cond2 = tad_angDist_DT[,"tad_meanAngDist_cond2"]
+  tad_meanAngDist = tad_angDist_fc_coexpr_DT[,"tad_meanAngDist"],
+  tad_meanAngDist_cond1 = tad_angDist_fc_coexpr_DT[,"tad_meanAngDist_cond1"],
+  tad_meanAngDist_cond2 = tad_angDist_fc_coexpr_DT[,"tad_meanAngDist_cond2"]
 ), my_xlab = "TAD mean ang. dist."
 )
 foo <- dev.off()
@@ -509,24 +507,25 @@ cat(paste0("... written: ", outFile, "\n"))
 outFile <- file.path(outFolder, paste0("multidens_all_meanAngDist.", plotType))
 do.call(plotType, list(outFile, height=myHeight, width=myHeight*1.2))
 plot_multiDens(list(
-  withinCoexpr = tad_angDist_DT[,"all_meanAngDist"],
-  withinCoexpr_cond1 = tad_angDist_DT[,"all_meanAngDist_cond1"],
-  withinCoexpr_cond2 = tad_angDist_DT[,"all_meanAngDist_cond2"]
+  all_meanAngDist = tad_angDist_fc_coexpr_DT[,"all_meanAngDist"],
+  all_meanAngDist_cond1 = tad_angDist_fc_coexpr_DT[,"all_meanAngDist_cond1"],
+  all_meanAngDist_cond2 = tad_angDist_fc_coexpr_DT[,"all_meanAngDist_cond2"]
 ), my_xlab = "all mean ang. dist."
 )
 foo <- dev.off()
 cat(paste0("... written: ", outFile, "\n"))
 
-
-
+cat("\nhelloA\n")
+colnames(tad_angDist_fc_coexpr_DT)
+cat("\nhelloA\n")
 
 all_y <- c("tad_meanAngDist", "tad_meanAngDist_cond1", "tad_meanAngDist_cond2", 
            "all_meanAngDist", "all_meanAngDist_cond1", "all_meanAngDist_cond2")
 xvar <- "withinCoexpr"
-myx <- tad_angDist_fc_DT[, xvar] 
+myx <- tad_angDist_fc_coexpr_DT[, xvar] 
 
 for(yvar in all_y) {
-    myy <- tad_angDist_fc_DT[, yvar] 
+    myy <- tad_angDist_fc_coexpr_DT[, yvar] 
     outFile <- file.path(outFolder, paste0(yvar, "_vs_", xvar, ".", plotType))
     do.call(plotType, list(outFile, height=myHeight, width=myWidth))
     densplot(y=myy,
