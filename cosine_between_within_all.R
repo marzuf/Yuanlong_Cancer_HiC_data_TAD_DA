@@ -498,7 +498,8 @@ plot_multiDens(list(
   tad_meanAngDist = tad_angDist_fc_coexpr_DT[,"tad_meanAngDist"],
   tad_meanAngDist_cond1 = tad_angDist_fc_coexpr_DT[,"tad_meanAngDist_cond1"],
   tad_meanAngDist_cond2 = tad_angDist_fc_coexpr_DT[,"tad_meanAngDist_cond2"]
-), my_xlab = "TAD mean ang. dist."
+), my_xlab = "TAD mean ang. dist.",
+legPos="topleft"
 )
 foo <- dev.off()
 cat(paste0("... written: ", outFile, "\n"))
@@ -510,10 +511,69 @@ plot_multiDens(list(
   all_meanAngDist = tad_angDist_fc_coexpr_DT[,"all_meanAngDist"],
   all_meanAngDist_cond1 = tad_angDist_fc_coexpr_DT[,"all_meanAngDist_cond1"],
   all_meanAngDist_cond2 = tad_angDist_fc_coexpr_DT[,"all_meanAngDist_cond2"]
-), my_xlab = "all mean ang. dist."
+), my_xlab = "all mean ang. dist.",
+legPos="topleft"
 )
 foo <- dev.off()
 cat(paste0("... written: ", outFile, "\n"))
+
+
+
+
+outFile <- file.path(outFolder, paste0("multidens_all_tad_meanAngDist.", plotType))
+do.call(plotType, list(outFile, height=myHeight, width=myHeight*1.2))
+plot_multiDens(list(
+  all_meanAngDist = tad_angDist_fc_coexpr_DT[,"all_meanAngDist"],
+  tad_meanAngDist = tad_angDist_fc_coexpr_DT[,"tad_meanAngDist"]
+), my_xlab = "all+tad mean ang. dist.",
+legPos="topleft"
+)
+foo <- dev.off()
+cat(paste0("... written: ", outFile, "\n"))
+
+outFile <- file.path(outFolder, paste0("multidens_all_tad_meanAngDist_cond1.", plotType))
+do.call(plotType, list(outFile, height=myHeight, width=myHeight*1.2))
+plot_multiDens(list(
+  all_meanAngDist_cond1 = tad_angDist_fc_coexpr_DT[,"all_meanAngDist_cond1"],
+  tad_meanAngDist_cond1 = tad_angDist_fc_coexpr_DT[,"tad_meanAngDist_cond1"]
+), my_xlab = "all+tad mean ang. dist. (cond1)",
+legPos="topleft"
+)
+foo <- dev.off()
+cat(paste0("... written: ", outFile, "\n"))
+
+
+outFile <- file.path(outFolder, paste0("multidens_all_tad_meanAngDist_cond2.", plotType))
+do.call(plotType, list(outFile, height=myHeight, width=myHeight*1.2))
+plot_multiDens(list(
+  all_meanAngDist_cond2 = tad_angDist_fc_coexpr_DT[,"all_meanAngDist_cond2"],
+  tad_meanAngDist_cond2 = tad_angDist_fc_coexpr_DT[,"tad_meanAngDist_cond2"]
+), my_xlab = "all+tad mean ang. dist. (cond2)",
+legPos="topleft"
+)
+foo <- dev.off()
+cat(paste0("... written: ", outFile, "\n"))
+
+
+
+
+outFile <- file.path(outFolder, paste0("multidens_all_meanAngDist.", plotType))
+do.call(plotType, list(outFile, height=myHeight, width=myHeight*1.2))
+plot_multiDens(list(
+  all_meanAngDist = tad_angDist_fc_coexpr_DT[,"all_meanAngDist"],
+  tad_meanAngDist = tad_angDist_fc_coexpr_DT[,"tad_meanAngDist"],
+  all_meanAngDist_cond1 = tad_angDist_fc_coexpr_DT[,"all_meanAngDist_cond1"],
+  tad_meanAngDist_cond1 = tad_angDist_fc_coexpr_DT[,"tad_meanAngDist_cond1"],
+  all_meanAngDist_cond2 = tad_angDist_fc_coexpr_DT[,"all_meanAngDist_cond2"],
+  tad_meanAngDist_cond2 = tad_angDist_fc_coexpr_DT[,"tad_meanAngDist_cond2"]
+), my_xlab = "all mean ang. dist.",
+legPos="topleft"
+)
+foo <- dev.off()
+cat(paste0("... written: ", outFile, "\n"))
+
+
+
 
 cat("\nhelloA\n")
 colnames(tad_angDist_fc_coexpr_DT)
@@ -539,7 +599,7 @@ for(yvar in all_y) {
              ylab=yvar,
              main = paste0(yvar, " vs. ", xvar)
     )
-    addCorr(x=myx,y=myy,legPos="topleft", bty='n')
+    addCorr(x=myx,y=myy,legPos="topright", bty='n')
     foo <- dev.off()
     cat(paste0("... written: ", outFile, "\n"))
     
