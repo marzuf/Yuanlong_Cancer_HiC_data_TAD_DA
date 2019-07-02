@@ -1,6 +1,53 @@
 #!/usr/bin/bash
 
 
+######## #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### for 6v2 and 9v2
+
+# LIVER
+# ./run_pipeline.sh GSE105381_HepG2_40kb TCGAlihc_norm_lihc   # 02.07.2019
+# ./run_pipeline.sh GSE105381_HepG2_40kb TCGAlihc_wt_mutCTNNB1   # 02.07.2019
+
+# ./run_pipeline.sh GSE58752_liver_40kb TCGAlihc_norm_lihc # ADDED 02.07.2019
+# ./run_pipeline.sh GSE58752_liver_40kb TCGAlihc_wt_mutCTNNB1 # ADDED 02.07.2019
+
+
+# BREAST
+# ./run_pipeline.sh ENCSR549MGQ_T47D_40kb TCGAbrca_lum_bas   # 02.07.2019
+# ./run_pipeline.sh GSE75070_MCF-7_shNS_40kb TCGAbrca_lum_bas # 02.07.2019
+
+# KIDNEY
+# ./run_pipeline.sh ENCSR079VIJ_G401_40kb TCGAkich_norm_kich  # 02.07.2019
+# ./run_pipeline.sh ENCSR401TBQ_Caki2_40kb TCGAkich_norm_kich # 02.07.2019
+
+
+# SKIN
+# ./run_pipeline.sh ENCSR312KHQ_SK-MEL-5_40kb TCGAskcm_lowInf_highInf #  02.07.2019
+# ./run_pipeline.sh ENCSR862OGI_RPMI-7951_40kb TCGAskcm_lowInf_highInf  #  02.07.2019
+
+# ./run_pipeline.sh ENCSR312KHQ_SK-MEL-5_40kb TCGAskcm_wt_mutBRAF # 02.07.2019
+# ./run_pipeline.sh ENCSR862OGI_RPMI-7951_40kb TCGAskcm_wt_mutBRAF # 02.07.2019
+
+
+# ./run_pipeline.sh ENCSR312KHQ_SK-MEL-5_40kb TCGAskcm_wt_mutCTNNB1		# 02.07.2019
+# ./run_pipeline.sh ENCSR862OGI_RPMI-7951_40kb TCGAskcm_wt_mutCTNNB1	# 02.07.2019
+
+# LUNG
+# ./run_pipeline.sh ENCSR444WCZ_A549_40kb TCGAluad_norm_luad   # 02.07.2019
+# ./run_pipeline.sh ENCSR489OCU_NCI-H460_40kb TCGAluad_norm_luad   # 02.07.2019
+
+# ./run_pipeline.sh ENCSR444WCZ_A549_40kb TCGAluad_mutKRAS_mutEGFR # 02.07.2019
+# ./run_pipeline.sh ENCSR489OCU_NCI-H460_40kb TCGAluad_mutKRAS_mutEGFR  # 02.07.2019
+
+# ./run_pipeline.sh ENCSR444WCZ_A549_40kb TCGAluad_nonsmoker_smoker # 02.07.2019
+# ./run_pipeline.sh ENCSR489OCU_NCI-H460_40kb TCGAluad_nonsmoker_smoker  # 02.07.2019 
+
+# ./run_pipeline.sh ENCSR444WCZ_A549_40kb TCGAluad_wt_mutKRAS # 02.07.2019
+# ./run_pipeline.sh ENCSR489OCU_NCI-H460_40kb TCGAluad_wt_mutKRAS # 02.07.2019 
+
+
+# ./run_pipeline.sh ENCSR444WCZ_A549_40kb TCGAlusc_norm_lusc  # 02.07.2019
+# ./run_pipeline.sh ENCSR489OCU_NCI-H460_40kb TCGAlusc_norm_lusc # 02.07.2019 
+
 ######## #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### 
 
 
@@ -106,7 +153,7 @@ echo "... > Gene expression dataset: $expr_dataset"
 step1=1     # prepare setting file
 step2=1    # run the pipeline
 
-TAD_DE_pipSteps=( "0cleanInputTCGA" "1cleanInput" "2" "2v2" "3" "4" "5" "6" "7" "8c" "9" "10" "11" "13cleanInput" "14f2" "170revision2EZH2" )
+#TAD_DE_pipSteps=( "0cleanInputTCGA" "1cleanInput" "2" "2v2" "3" "4" "5" "6" "7" "8c" "9" "10" "11" "13cleanInput" "14f2" "170revision2EZH2" )
 #TAD_DE_pipSteps=( "7" "8c" "9" "10" "11" "13cleanInput" "14f2" "170revision2EZH2" )
 #TAD_DE_pipSteps=( "0cleanInputTCGA" )
 #TAD_DE_pipSteps=( "0cleanInputTCGA" "1cleanInput" "2" "3" )
@@ -117,7 +164,7 @@ TAD_DE_pipSteps=( "0cleanInputTCGA" "1cleanInput" "2" "2v2" "3" "4" "5" "6" "7" 
 #TAD_DE_pipSteps=( "5v2" )
 #TAD_DE_pipSteps=( "6v2onlyW" )
 #TAD_DE_pipSteps=( "7v2" )
-#TAD_DE_pipSteps=( "9v2" )
+TAD_DE_pipSteps=( "6v2onlyW" "9v2" )
 #TAD_DE_pipSteps=( "10v2" "10b" )
 
 # ./run_pipeline.sh GSE105381_HepG2_40kb TCGAlihc_norm_lihc   # 

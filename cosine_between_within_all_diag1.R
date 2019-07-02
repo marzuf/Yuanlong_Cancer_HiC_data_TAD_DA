@@ -1,15 +1,15 @@
 
-# Rscript cosine_between_within_all.R
+# Rscript cosine_between_within_all_diag1.R
 
-script_name <- "cosine_between_within_all.R"
+script_name <- "cosine_between_within_all_diag1.R"
 
 startTime <- Sys.time()
 
-cat("> START cosine_between_within_all.R \n")
+cat("> START cosine_between_within_all_diag1.R \n")
 
 SSHFS <- FALSE
 
-buildData <- FALSE
+buildData <- TRUE
 
 require(tools)
 require(foreach)
@@ -38,7 +38,7 @@ windowSizeBp <- 500*10^3
 options(scipen=100)
 
 
-outFolder <- "COSINE_BETWEEN_WITHIN_ALL"
+outFolder <- "COSINE_BETWEEN_WITHIN_ALL_DIAG1"
 dir.create(outFolder, recursive=TRUE)
 
 corrMet <- "pearson"
@@ -177,6 +177,8 @@ if(buildData) {
       stopifnot(tad_genes %in% rownames(tad_coexprMatrix) & tad_genes %in% colnames(tad_coexprMatrix))
       stopifnot(rownames(tad_coexprMatrix) %in% tad_genes &  colnames(tad_coexprMatrix) %in% tad_genes)
       stopifnot( rownames(tad_coexprMatrix) == colnames(tad_coexprMatrix))
+      ### CORRECTED HERE -> coexpression with itself should be 1 not zero !
+      diag(tad_coexprMatrix) <- 1
       
 
       tad_genes_cmbs <- combn(x = tad_genes, m = 2)
@@ -202,6 +204,8 @@ if(buildData) {
                                                   attr=colnames(all_coexprDT)[3], sparse=FALSE))
       stopifnot(tad_genes %in% rownames(all_coexprMatrix) & tad_genes %in% colnames(all_coexprMatrix))
       stopifnot( rownames(all_coexprMatrix) == colnames(all_coexprMatrix))
+      ### CORRECTED HERE -> coexpression with itself should be 1 not zero !
+      diag(all_coexprMatrix) <- 1
       
       tad_genes_cmbs <- combn(x = tad_genes, m = 2)
       
@@ -232,7 +236,8 @@ if(buildData) {
       stopifnot(tad_genes %in% rownames(tad_coexprMatrix_cond1) & tad_genes %in% colnames(tad_coexprMatrix_cond1))
       stopifnot(rownames(tad_coexprMatrix_cond1) %in% tad_genes &  colnames(tad_coexprMatrix_cond1) %in% tad_genes)
       stopifnot( rownames(tad_coexprMatrix_cond1) == colnames(tad_coexprMatrix_cond1))
-      
+      ### CORRECTED HERE -> coexpression with itself should be 1 not zero !
+      diag(tad_coexprMatrix_cond1) <- 1
       
       tad_genes_cmbs_cond1 <- combn(x = tad_genes, m = 2)
       
@@ -257,7 +262,8 @@ if(buildData) {
                                                   attr=colnames(all_coexprDT_cond1)[3], sparse=FALSE))
       stopifnot(tad_genes %in% rownames(all_coexprMatrix_cond1) & tad_genes %in% colnames(all_coexprMatrix_cond1))
       stopifnot( rownames(all_coexprMatrix_cond1) == colnames(all_coexprMatrix_cond1))
-      
+      ### CORRECTED HERE -> coexpression with itself should be 1 not zero !
+      diag(all_coexprMatrix_cond1) <- 1
       
       tad_genes_cmbs <- combn(x = tad_genes, m = 2)
       
@@ -287,7 +293,8 @@ if(buildData) {
       stopifnot(tad_genes %in% rownames(tad_coexprMatrix_cond2) & tad_genes %in% colnames(tad_coexprMatrix_cond2))
       stopifnot(rownames(tad_coexprMatrix_cond2) %in% tad_genes &  colnames(tad_coexprMatrix_cond2) %in% tad_genes)
       stopifnot( rownames(tad_coexprMatrix_cond2) == colnames(tad_coexprMatrix_cond2))
-      
+      ### CORRECTED HERE -> coexpression with itself should be 1 not zero !
+      diag(tad_coexprMatrix_cond2) <- 1
       
       tad_genes_cmbs_cond2 <- combn(x = tad_genes, m = 2)
       
@@ -313,6 +320,8 @@ if(buildData) {
                                                         attr=colnames(all_coexprDT_cond2)[3], sparse=FALSE))
       stopifnot(tad_genes %in% rownames(all_coexprMatrix_cond2) & tad_genes %in% colnames(all_coexprMatrix_cond2))
       stopifnot( rownames(all_coexprMatrix_cond2) == colnames(all_coexprMatrix_cond2))
+      ### CORRECTED HERE -> coexpression with itself should be 1 not zero !
+      diag(all_coexprMatrix_cond2) <- 1
       
       
       tad_genes_cmbs <- combn(x = tad_genes, m = 2)
