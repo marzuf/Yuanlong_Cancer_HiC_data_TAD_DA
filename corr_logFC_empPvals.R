@@ -155,6 +155,17 @@ if(build_signifTADs_allDS_data){
     tad_pvalComb <- sort(tad_pvals)
     stopifnot(setequal(names(tad_pvalComb), pipeline_regionList))
     
+    # RETRIEVE PVAL WILCOX
+    stopifnot(dir.exists(file.path(dsPipOutDir, script9v2_name)))
+    tad_pvalWilcoxFile <- file.path(dsPipOutDir, script9v2_name, "emp_pval_wilcoxStat.Rdata")
+    stopifnot(file.exists(tad_pvalWilcoxFile))
+    tad_pvalWilcox <- eval(parse(text = load(tad_pvalWilcoxFile))) # not adjusted
+    adj_tad_pvalWilcox <- sort(p.adjust(tad_pvalWilcox, method="BH"))
+    tad_pvalWilcox <- sort(tad_pvalWilcox)
+    stopifnot(setequal(names(tad_pvalWilcox), pipeline_regionList))
+    stopifnot(setequal(names(adj_tad_pvalWilcox), pipeline_regionList))
+    
+    
     all_tads <- pipeline_regionList
     
     outDT <- data.frame(
@@ -165,10 +176,15 @@ if(build_signifTADs_allDS_data){
       
       nGenes = tad_nGenes[all_tads],
       
+      
+      
       adj_pvalFC = as.numeric(adj_tad_pvalFC[all_tads]),
       adj_pvalCorr = as.numeric(adj_tad_pvalCorr[all_tads]),
       adj_pvalComb = as.numeric(adj_tad_pvalComb[all_tads]),
 
+      adj_pvalWilcox = as.numeric(adj_tad_pvalWilcox[all_tads]),
+      
+      
       valuesFC = as.numeric(tad_valuesFC[all_tads]),
       valuesCorr = as.numeric(tad_valuesCorr[all_tads]),
       valuesFCC = as.numeric(tad_valuesFCC[all_tads]),
@@ -279,6 +295,49 @@ addCorr(x=myx, legPos="topleft",
         y=myy, bty='n')
 foo <- dev.off()
 cat(paste0("... written: ", outFile, "\n"))
+
+
+########################################################################################### 
+########################################################################################### adj pvalCorr <-> adj pvalFC
+########################################################################################### 
+
+
+myTit <- paste0("adj. empPval. wilcox vs. adj. empPval. Corr.")
+mySub <- paste0("(nDS = ", length(all_ds), ")")
+var1 <- "adj_pvalCorr"
+var2 <- "adj_pvalWilcox"
+outFile <- file.path(outFolder, paste0(var2, "_", var1, "_", "densplot.", plotType))
+do.call(plotType, list(outFile,  height=myHeight, width=myWidth))
+myx <- (allPvals_allDS_DT[,var1]) 
+myy <- (allPvals_allDS_DT[,var2]) 
+densplot(x = myx,
+         y = myy,
+         main = myTit,
+         xlab = var1,
+         ylab = var2,
+         cex.axis = plotCex, cex.lab=plotCex, cex.main=plotCex)
+mtext(text=mySub, side=3)
+addCorr(x=myx, legPos="topleft",
+        y=myy, bty='n')
+foo <- dev.off()
+cat(paste0("... written: ", outFile, "\n"))
+
+outFile <- file.path(outFolder, paste0(var2, "_", var1, "_log10_", "densplot.", plotType))
+do.call(plotType, list(outFile,  height=myHeight, width=myWidth))
+myx <- -log10(allPvals_allDS_DT[,var1]) 
+myy <- -log10(allPvals_allDS_DT[,var2]) 
+densplot(x = myx,
+         y = myy,
+         main = myTit,
+         xlab = paste0(var1, "[-log10]"),
+         ylab = paste0(var2, "[-log10]"),
+         cex.axis = plotCex, cex.lab=plotCex, cex.main=plotCex)
+mtext(text=mySub, side=3)
+addCorr(x=myx, legPos="topleft",
+        y=myy, bty='n')
+foo <- dev.off()
+cat(paste0("... written: ", outFile, "\n"))
+
 
 
 # ######################################################################################

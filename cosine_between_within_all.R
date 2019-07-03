@@ -56,6 +56,10 @@ stopifnot(length(coexprFiles) > 0)
 coexprByCondFolder <- "CREATE_COEXPR_BYCOND_SORTNODUP"
 stopifnot(dir.exists(coexprByCondFolder))
 
+all_geneList_files <- list.files(pipOutFolder, recursive = TRUE, pattern="pipeline_geneList.Rdata", full.names = FALSE)
+stopifnot(length(all_geneList_files) > 0)
+
+
 coexprDataFile = coexprFiles[1]
 hicds = "K562_40kb"
 exprds = "TCGAlaml_wt_mutFLT3"
@@ -489,6 +493,41 @@ tad_angDist_fc_coexpr_DT$withinBetweenDiffKb <- (tad_angDist_fc_coexpr_DT$within
 tad_angDist_fc_coexpr_DT$withinBetweenRatioKb <- (tad_angDist_fc_coexpr_DT$withinCoexpr / tad_angDist_fc_coexpr_DT$betweenKbCoexpr) 
 
 
+##########################################
+#  BUILD # of genes
+##########################################
+gL_file = all_geneList_files[1]
+nbrGenes_DT <- foreach(gL_file = all_geneList_files, .combine = 'rbind') %dopar% {
+  curr_file <- file.path(pipOutFolder, gL_file)
+  stopifnot(file.exists(curr_file))
+  geneList <- eval(parse(text = load(curr_file)))
+  dataset <- dirname(dirname(gL_file))
+  g2tFile <- file.path(dirname(dataset), "genes2tad", "all_genes_positions.txt")
+  stopifnot(file.exists(g2tFile))
+  g2t_DT <- read.delim(g2tFile, header=F, 
+                       col.names = c("entrezID",  "chromo", "start", "end", "region"), stringsAsFactors = FALSE)
+  g2t_DT$entrezID <- as.character(g2t_DT$entrezID)
+  stopifnot(geneList %in% g2t_DT$entrezID)
+  g2t_DT <- g2t_DT[g2t_DT$entrezID %in% geneList,]
+  geneNbr <- setNames(as.numeric(table(g2t_DT$region)), names(table(g2t_DT$region)))
+  data.frame(
+    dataset = dataset,
+    region = names(geneNbr),
+    nbrGenes = as.numeric(geneNbr),
+    stringsAsFactors = FALSE
+  )
+}
+
+stopifnot(nrow(nbrGenes_DT) == nrow(tad_angDist_fc_coexpr_DT))
+tad_angDist_fc_coexpr_DT <- merge(tad_angDist_fc_coexpr_DT, nbrGenes_DT, by=c("dataset", "region"))
+stopifnot(nrow(nbrGenes_DT) == nrow(tad_angDist_fc_coexpr_DT))
+
+
+outFile <- file.path(outFolder, paste0("tad_angDist_fc_coexpr_DT.Rdata"))
+save(tad_angDist_fc_coexpr_DT, file = outFile)
+cat(paste0("... written: ", outFile, "\n"))
+
+
 
 outFile <- file.path(outFolder, paste0("multidens_tad_meanAngDist.", plotType))
 do.call(plotType, list(outFile, height=myHeight, width=myHeight*1.2))
@@ -577,44 +616,87 @@ cat("\nhelloA\n")
 colnames(tad_angDist_fc_coexpr_DT)
 cat("\nhelloA\n")
 
+##############################################################################################################################
+
 all_y <- c("tad_meanAngDist", "tad_meanAngDist_cond1", "tad_meanAngDist_cond2", 
-           "all_meanAngDist", "all_meanAngDist_cond1", "all_meanAngDist_cond2")
+           "all_meanAngDist", "all_meanAngDist_cond1", "all_meanAngDist_cond2",
+           "nbrGenes")
 xvar <- "withinCoexpr"
 myx <- tad_angDist_fc_coexpr_DT[, xvar] 
 
 for(yvar in all_y) {
-    myy <- tad_angDist_fc_coexpr_DT[, yvar] 
-    outFile <- file.path(outFolder, paste0(yvar, "_vs_", xvar, ".", plotType))
-    do.call(plotType, list(outFile, height=myHeight, width=myWidth))
-    densplot(y=myy,
-             x=myx,
-             pch=16,
-             cex=0.7,
-             cex.axis = myCexAxis,
-             cex.lab = myCexLab,
-             # col="black",
-             xlab=xvar,
-             ylab=yvar,
-             main = paste0(yvar, " vs. ", xvar)
-    )
-    addCorr(x=myx,y=myy,legPos="topright", bty='n')
-    foo <- dev.off()
-    cat(paste0("... written: ", outFile, "\n"))
-    
-    
-    outFile <- file.path(outFolder, paste0("density_", yvar, ".", plotType))
-    do.call(plotType, list(outFile, height=myHeight, width=myWidth*1.2))
-    plot(density(na.omit(myy)),
-             pch=16,
-             cex=0.7,
-             cex.axis = myCexAxis,
-             cex.lab = myCexLab,
-             # col="black",
-             ylab=yvar,
-             main = paste0(yvar)
-    )
-    foo <- dev.off()
-    cat(paste0("... written: ", outFile, "\n"))
+  myy <- tad_angDist_fc_coexpr_DT[, yvar] 
+  outFile <- file.path(outFolder, paste0(yvar, "_vs_", xvar, ".", plotType))
+  do.call(plotType, list(outFile, height=myHeight, width=myWidth))
+  densplot(y=myy,
+           x=myx,
+           pch=16,
+           cex=0.7,
+           cex.axis = myCexAxis,
+           cex.lab = myCexLab,
+           # col="black",
+           xlab=xvar,
+           ylab=yvar,
+           main = paste0(yvar, " vs. ", xvar)
+  )
+  addCorr(x=myx,y=myy,legPos="topright", bty='n')
+  foo <- dev.off()
+  cat(paste0("... written: ", outFile, "\n"))
+  
+  
+  outFile <- file.path(outFolder, paste0("density_", yvar, ".", plotType))
+  do.call(plotType, list(outFile, height=myHeight, width=myWidth*1.2))
+  plot(density(na.omit(myy)),
+       pch=16,
+       cex=0.7,
+       cex.axis = myCexAxis,
+       cex.lab = myCexLab,
+       # col="black",
+       ylab=yvar,
+       main = paste0(yvar)
+  )
+  foo <- dev.off()
+  cat(paste0("... written: ", outFile, "\n"))
+}
+##############################################################################################################################
+
+all_y <- c("nbrGenes")
+xvar <- "tad_meanAngDist"
+myx <- tad_angDist_fc_coexpr_DT[, xvar] 
+
+for(yvar in all_y) {
+  myy <- tad_angDist_fc_coexpr_DT[, yvar] 
+  outFile <- file.path(outFolder, paste0(yvar, "_vs_", xvar, ".", plotType))
+  do.call(plotType, list(outFile, height=myHeight, width=myWidth))
+  densplot(y=myy,
+           x=myx,
+           pch=16,
+           cex=0.7,
+           cex.axis = myCexAxis,
+           cex.lab = myCexLab,
+           # col="black",
+           xlab=xvar,
+           ylab=yvar,
+           main = paste0(yvar, " vs. ", xvar)
+  )
+  addCorr(x=myx,y=myy,legPos="topright", bty='n')
+  foo <- dev.off()
+  cat(paste0("... written: ", outFile, "\n"))
+  
+  
+  outFile <- file.path(outFolder, paste0("density_", yvar, ".", plotType))
+  do.call(plotType, list(outFile, height=myHeight, width=myWidth*1.2))
+  plot(density(na.omit(myy)),
+       pch=16,
+       cex=0.7,
+       cex.axis = myCexAxis,
+       cex.lab = myCexLab,
+       # col="black",
+       ylab=yvar,
+       main = paste0(yvar)
+  )
+  foo <- dev.off()
+  cat(paste0("... written: ", outFile, "\n"))
 }
   
 # ######################################################################################

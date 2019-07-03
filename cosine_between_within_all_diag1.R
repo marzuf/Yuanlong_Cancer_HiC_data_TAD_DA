@@ -9,7 +9,7 @@ cat("> START cosine_between_within_all_diag1.R \n")
 
 SSHFS <- FALSE
 
-buildData <- TRUE
+buildData <- FALSE
 
 require(tools)
 require(foreach)
@@ -49,6 +49,13 @@ stopifnot(dir.exists(pipOutFolder))
 
 all_fc_files <- list.files(pipOutFolder, recursive = TRUE, pattern="all_meanLogFC_TAD.Rdata", full.names = FALSE)
 stopifnot(length(all_fc_files) > 0)
+
+
+all_geneList_files <- list.files(pipOutFolder, recursive = TRUE, pattern="pipeline_geneList.Rdata", full.names = FALSE)
+stopifnot(length(all_geneList_files) > 0)
+
+varFile <- file.path("EXPR_VARIANCE_BYTAD/LOG2FPKM/all_ds_geneVarDT.Rdata")
+stopifnot(file.exists(varFile))
 
 coexprFiles  <- list.files("CREATE_COEXPR_SORTNODUP", recursive = TRUE, pattern = mypattern, full.names = TRUE)
 stopifnot(length(coexprFiles) > 0)
@@ -333,10 +340,7 @@ if(buildData) {
       })
       
       all_meanAngDist_cond2 <- mean(all_ang_dist_cond2)
-      
       ################################################################################
-      
-      
       list(
         tad_meanAngDist = tad_meanAngDist,
         tad_meanAngDist_cond1 = tad_meanAngDist_cond1,
@@ -359,8 +363,6 @@ if(buildData) {
   outFile <- file.path(outFolder, "allData_ang_dist.Rdata")
   allData_ang_dist <- eval(parse(text = load(outFile)))
 }
-
-
 
 
 # sort the TADs by decreasing withinCoexpr
@@ -397,7 +399,6 @@ tad_angDist_DT <- data.frame(
                                              function(sublist) lapply(sublist, function(x) x[["all_meanAngDist_cond2"]])))),
   
 
-  
   stringsAsFactors = FALSE
 )
 
@@ -411,7 +412,7 @@ tad_angDist_DT$allAngDistRatioCond1Cond2 <- (tad_angDist_DT$all_meanAngDist_cond
 
 tad_angDist_DT$tadAngDistChangeratioCond1Cond2 <- (tad_angDist_DT$tad_meanAngDist_cond2 - tad_angDist_DT$tad_meanAngDist_cond1)/tad_angDist_DT$tad_meanAngDist_cond1
 tad_angDist_DT$allAngDistChangeratioCond1Cond2 <- (tad_angDist_DT$all_meanAngDist_cond2 - tad_angDist_DT$all_meanAngDist_cond1)/tad_angDist_DT$all_meanAngDist_cond1
-cat("helloC\n")
+
 
 ### BUILD THE LOGFC TABLE
 fc_file = all_fc_files[1]
@@ -430,7 +431,6 @@ fc_DT <- foreach(fc_file = all_fc_files, .combine = 'rbind') %dopar% {
 
 tad_angDist_fc_DT <- merge(tad_angDist_DT, fc_DT, by=c("dataset", "region"))
 
-cat("helloD\n")
 ##### build the coexpr table
 
 coexprFolder <- "COEXPR_BETWEEN_WITHIN_ALL"
@@ -438,7 +438,6 @@ coexprFile <- file.path(coexprFolder, "allData_within_between_coexpr.Rdata")
 stopifnot(file.exists(coexprFile))
 allData_within_between_coexpr <- eval(parse(text = load(coexprFile)))
 
-cat("helloE\n")
 
 tad_coexpr_DT <- data.frame(
   dataset = as.character(unlist(lapply(1:length(allData_within_between_coexpr), function(i) {
@@ -481,7 +480,6 @@ tad_coexpr_DT <- data.frame(
 
 tad_angDist_fc_coexpr_DT <- merge(tad_angDist_fc_DT, tad_coexpr_DT, by=c("dataset", "region"))
 
-cat("helloF\n")
 
 tad_angDist_fc_coexpr_DT$withinDiffCond1Cond2 <- (tad_angDist_fc_coexpr_DT$withinCoexpr_cond1 - tad_angDist_fc_coexpr_DT$withinCoexpr_cond2)
 tad_angDist_fc_coexpr_DT$withinRatioCond1Cond2 <- (tad_angDist_fc_coexpr_DT$withinCoexpr_cond1 / tad_angDist_fc_coexpr_DT$withinCoexpr_cond2)
@@ -497,7 +495,73 @@ tad_angDist_fc_coexpr_DT$withinBetweenRatioNbr <- (tad_angDist_fc_coexpr_DT$with
 tad_angDist_fc_coexpr_DT$withinBetweenDiffKb <- (tad_angDist_fc_coexpr_DT$withinCoexpr - tad_angDist_fc_coexpr_DT$betweenKbCoexpr) 
 tad_angDist_fc_coexpr_DT$withinBetweenRatioKb <- (tad_angDist_fc_coexpr_DT$withinCoexpr / tad_angDist_fc_coexpr_DT$betweenKbCoexpr) 
 
+##########################################
+#  BUILD # of genes
+##########################################
+gL_file = all_geneList_files[1]
+nbrGenes_DT <- foreach(gL_file = all_geneList_files, .combine = 'rbind') %dopar% {
+  curr_file <- file.path(pipOutFolder, gL_file)
+  stopifnot(file.exists(curr_file))
+  geneList <- eval(parse(text = load(curr_file)))
+  dataset <- dirname(dirname(gL_file))
+  g2tFile <- file.path(dirname(dataset), "genes2tad", "all_genes_positions.txt")
+  stopifnot(file.exists(g2tFile))
+  g2t_DT <- read.delim(g2tFile, header=F, 
+                       col.names = c("entrezID",  "chromo", "start", "end", "region"), stringsAsFactors = FALSE)
+  g2t_DT$entrezID <- as.character(g2t_DT$entrezID)
+  stopifnot(geneList %in% g2t_DT$entrezID)
+  g2t_DT <- g2t_DT[g2t_DT$entrezID %in% geneList,]
+  geneNbr <- setNames(as.numeric(table(g2t_DT$region)), names(table(g2t_DT$region)))
+  data.frame(
+    dataset = dataset,
+    region = names(geneNbr),
+    nbrGenes = as.numeric(geneNbr),
+    stringsAsFactors = FALSE
+  )
+}
 
+stopifnot(nrow(nbrGenes_DT) == nrow(tad_angDist_fc_coexpr_DT))
+tad_angDist_fc_coexpr_DT <- merge(tad_angDist_fc_coexpr_DT, nbrGenes_DT, by=c("dataset", "region"))
+stopifnot(nrow(nbrGenes_DT) == nrow(tad_angDist_fc_coexpr_DT))
+
+
+##########################################
+#  BUILD TAD variance
+##########################################
+varDT <- eval(parse(text = load(varFile)))
+
+toKeep <- c("hicds", "exprds", "tadMeanVar", "tadMeanVar_cond1", "tadMeanVar_cond2")
+varData <- eval(parse(text = load(varFile)))
+varData2 <- lapply(varData, function(x) x[toKeep])
+varDT <- do.call(rbind, lapply(varData2, data.frame)) # otherwise the columns remain as lists !
+
+varDT3 <- do.call(rbind, lapply(seq_len(length(varData2)), function(i) {
+  x <- varData2[[i]]
+  rL <- names(x[["tadMeanVar"]])
+  tmp2 <- data.frame(x)
+  tmp2$region <- rL
+  tmp2
+}
+)) # otherwise the columns remain as lists !
+
+varDT <- varDT3
+
+varDT$dataset <- paste0(varDT$hicds, "/", varDT$exprds)
+rownames(varDT) <- NULL
+
+stopifnot(nrow(varDT) == nrow(tad_angDist_fc_coexpr_DT))
+tad_angDist_fc_coexpr_DT <- merge(tad_angDist_fc_coexpr_DT, varDT, by=c("dataset", "region"))
+stopifnot(nrow(varDT) == nrow(tad_angDist_fc_coexpr_DT))
+
+
+
+outFile <- file.path(outFolder, paste0("tad_angDist_fc_coexpr_DT.Rdata"))
+save(tad_angDist_fc_coexpr_DT, file = outFile)
+cat(paste0("... written: ", outFile, "\n"))
+
+##############################################################################################################################
+##############################################################################################################################
+##############################################################################################################################
 
 outFile <- file.path(outFolder, paste0("multidens_tad_meanAngDist.", plotType))
 do.call(plotType, list(outFile, height=myHeight, width=myHeight*1.2))
@@ -510,6 +574,9 @@ legPos="topleft"
 )
 foo <- dev.off()
 cat(paste0("... written: ", outFile, "\n"))
+
+
+##############################################################################################################################
 
 
 outFile <- file.path(outFolder, paste0("multidens_all_meanAngDist.", plotType))
@@ -526,6 +593,8 @@ cat(paste0("... written: ", outFile, "\n"))
 
 
 
+##############################################################################################################################
+
 
 outFile <- file.path(outFolder, paste0("multidens_all_tad_meanAngDist.", plotType))
 do.call(plotType, list(outFile, height=myHeight, width=myHeight*1.2))
@@ -537,6 +606,10 @@ legPos="topleft"
 )
 foo <- dev.off()
 cat(paste0("... written: ", outFile, "\n"))
+
+
+##############################################################################################################################
+
 
 outFile <- file.path(outFolder, paste0("multidens_all_tad_meanAngDist_cond1.", plotType))
 do.call(plotType, list(outFile, height=myHeight, width=myHeight*1.2))
@@ -550,6 +623,8 @@ foo <- dev.off()
 cat(paste0("... written: ", outFile, "\n"))
 
 
+##############################################################################################################################
+
 outFile <- file.path(outFolder, paste0("multidens_all_tad_meanAngDist_cond2.", plotType))
 do.call(plotType, list(outFile, height=myHeight, width=myHeight*1.2))
 plot_multiDens(list(
@@ -561,6 +636,8 @@ legPos="topleft"
 foo <- dev.off()
 cat(paste0("... written: ", outFile, "\n"))
 
+
+##############################################################################################################################
 
 
 
@@ -580,14 +657,13 @@ foo <- dev.off()
 cat(paste0("... written: ", outFile, "\n"))
 
 
+tad_angDist_fc_coexpr_DT$tadMeanVar_log10 <- log10(tad_angDist_fc_coexpr_DT$tadMeanVar)
 
-
-cat("\nhelloA\n")
-colnames(tad_angDist_fc_coexpr_DT)
-cat("\nhelloA\n")
+##############################################################################################################################
 
 all_y <- c("tad_meanAngDist", "tad_meanAngDist_cond1", "tad_meanAngDist_cond2", 
-           "all_meanAngDist", "all_meanAngDist_cond1", "all_meanAngDist_cond2")
+           "all_meanAngDist", "all_meanAngDist_cond1", "all_meanAngDist_cond2",
+           "nbrGenes", "tadMeanVar", "tadMeanVar_log10")
 xvar <- "withinCoexpr"
 myx <- tad_angDist_fc_coexpr_DT[, xvar] 
 
@@ -625,7 +701,147 @@ for(yvar in all_y) {
     foo <- dev.off()
     cat(paste0("... written: ", outFile, "\n"))
 }
+##############################################################################################################################
+
+all_y <- c("nbrGenes", "tadMeanVar", "tadMeanVar_log10")
+xvar <- "tad_meanAngDist"
+myx <- tad_angDist_fc_coexpr_DT[, xvar] 
+
+for(yvar in all_y) {
+  myy <- tad_angDist_fc_coexpr_DT[, yvar] 
+  outFile <- file.path(outFolder, paste0(yvar, "_vs_", xvar, ".", plotType))
+  do.call(plotType, list(outFile, height=myHeight, width=myWidth))
+  densplot(y=myy,
+           x=myx,
+           pch=16,
+           cex=0.7,
+           cex.axis = myCexAxis,
+           cex.lab = myCexLab,
+           # col="black",
+           xlab=xvar,
+           ylab=yvar,
+           main = paste0(yvar, " vs. ", xvar)
+  )
+  addCorr(x=myx,y=myy,legPos="topright", bty='n')
+  foo <- dev.off()
+  cat(paste0("... written: ", outFile, "\n"))
   
+  
+  outFile <- file.path(outFolder, paste0("density_", yvar, ".", plotType))
+  do.call(plotType, list(outFile, height=myHeight, width=myWidth*1.2))
+  plot(density(na.omit(myy)),
+       pch=16,
+       cex=0.7,
+       cex.axis = myCexAxis,
+       cex.lab = myCexLab,
+       # col="black",
+       ylab=yvar,
+       main = paste0(yvar)
+  )
+  foo <- dev.off()
+  cat(paste0("... written: ", outFile, "\n"))
+}
+
+##############################################################################################################################
+##############################################################################################################################
+##############################################################################################################################
+
+source("subtype_cols.R")
+source("../Cancer_HiC_data_TAD_DA/utils_fct.R")
+myCexAxis <- myCexLab <- 1.2
+
+colDT <- data.frame(
+  cmps = names(all_cmps),
+  cmpType = all_cmps,
+  stringsAsFactors = FALSE
+)
+colDT$cmpCol <- all_cols[colDT$cmpType]
+stopifnot(!is.na(colDT))
+
+tad_angDist_fc_coexpr_DT$cmps <- tad_angDist_fc_coexpr_DT$exprds
+
+stopifnot(tad_angDist_fc_coexpr_DT$cmps %in% colDT$cmps)
+
+tad_angDist_fc_coexpr_DT <- merge(tad_angDist_fc_coexpr_DT, colDT, by = "cmps", all.x = TRUE, all.y = FALSE)
+
+stopifnot(!is.na(tad_angDist_fc_coexpr_DT$cmpCol))
+
+
+
+myplot_densplot <- function(xvar, yvar, addCurve=FALSE, dt = tad_angDist_fc_coexpr_DT, outPrefix="", savePlot=TRUE) {
+  
+  stopifnot(xvar %in% colnames(dt))
+  myx <- dt[,xvar]
+  stopifnot(yvar %in% colnames(dt))
+  myy <- dt[,yvar]
+  mycols <- dt$cmpCol
+  
+  if(savePlot){
+    outFile <- file.path(outFolder, paste0(outPrefix, "", yvar, "_vs_", xvar, "_densplot.", plotType))
+    do.call(plotType, list(outFile, height=myHeight, width=myWidth))
+  }
+  densplot(y=myy,
+           x=myx,
+           pch=16,
+           cex=0.7,
+           cex.axis = myCexAxis,
+           cex.lab = myCexLab,
+           xlab=xvar,
+           ylab=yvar,
+           main = paste0(yvar, " vs. ", xvar)
+  )
+  addCorr(x=myx,y=myy,legPos="topleft", bty='n')
+  if(addCurve) {
+    curve(1*x, lty=2, col="grey", add = TRUE)
+  }
+  if(savePlot){
+  foo <- dev.off()
+  cat(paste0("... written: ", outFile, "\n"))
+  }
+}
+
+myplot_colplot <- function(xvar, yvar, mycols, addCurve = FALSE, dt = tad_angDist_fc_coexpr_DT, outPrefix="", savePlot=TRUE) {
+  
+  stopifnot(xvar %in% colnames(dt))
+  myx <- dt[,xvar]
+  stopifnot(yvar %in% colnames(dt))
+  myy <- dt[,yvar]
+  if(savePlot){
+    outFile <- file.path(outFolder, paste0(outPrefix, "", yvar, "_vs_", xvar, "_colplot.", plotType))
+    do.call(plotType, list(outFile, height=myHeight, width=myWidth))
+  }
+  plot(y=myy,
+       x=myx,
+       pch=16,
+       cex=0.7,
+       cex.axis = myCexAxis,
+       cex.lab = myCexLab,
+       xlab=xvar,
+       ylab=yvar,
+       col=mycols,
+       main = paste0(yvar, " vs. ", xvar)
+  )
+  addCorr(x=myx,y=myy,legPos="topleft", bty='n')
+  if(addCurve) {
+    curve(1*x, lty=2, col="grey",add=TRUE)
+  }
+  addSubtypeLeg(bty="n")
+  if(savePlot){
+    foo <- dev.off()
+    cat(paste0("... written: ", outFile, "\n"))
+  }
+}
+
+mycols <- tad_angDist_fc_coexpr_DT$cmpCol
+
+
+yvar <- "tad_meanAngDist_cond2"
+xvar <- "tad_meanAngDist_cond1"
+
+myplot_densplot(xvar,yvar, savePlot = TRUE)
+myplot_colplot(xvar,yvar,mycols, savePlot = TRUE)
+
+
 # ######################################################################################
 # ######################################################################################
 # ######################################################################################
