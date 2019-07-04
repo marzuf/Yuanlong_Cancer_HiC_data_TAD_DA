@@ -838,8 +838,8 @@ mycols <- tad_angDist_fc_coexpr_DT$cmpCol
 yvar <- "tad_meanAngDist_cond2"
 xvar <- "tad_meanAngDist_cond1"
 
-myplot_densplot(xvar,yvar, savePlot = TRUE)
-myplot_colplot(xvar,yvar,mycols, savePlot = TRUE)
+myplot_densplot(xvar,yvar, savePlot = TRUE, addCurve = TRUE)
+myplot_colplot(xvar,yvar,mycols, savePlot = TRUE, addCurve = TRUE)
 
 
 # ######################################################################################
