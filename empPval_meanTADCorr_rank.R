@@ -66,7 +66,7 @@ for(permut_file in all_permut_files) {
   # take -x to have decreasing ranking
   rank_meanCorr_permDT <- apply(meanCorr_permDT, 2 , function(x) rank(-x, ties=tiesMeth))
   max1_idx <- which(rownames(meanCorr_permDT) == names(which(rank_meanCorr_permDT[,1] == 1)))
-  stopifnot(meanCorr_permDT[-max1_idx,1] <  rank_meanCorr_permDT[max1_idx,1])
+  stopifnot(meanCorr_permDT[-max1_idx,1] <  meanCorr_permDT[max1_idx,1])
   
   stopifnot( setequal(all_regions, rownames(rank_meanCorr_permDT) ))
 

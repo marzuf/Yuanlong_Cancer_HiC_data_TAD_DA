@@ -48,6 +48,37 @@
 # ./run_pipeline.sh ENCSR444WCZ_A549_40kb TCGAlusc_norm_lusc  # 02.07.2019
 # ./run_pipeline.sh ENCSR489OCU_NCI-H460_40kb TCGAlusc_norm_lusc # 02.07.2019 
 
+
+# PANCREAS
+# ./run_pipeline.sh Panc1_rep12_40kb TCGApaad_wt_mutKRAS # 02.07.2019
+	
+
+# PROSTATE	
+# ./run_pipeline.sh ENCSR346DCU_LNCaP_40kb TCGAprad_norm_prad # 02.07.2019
+# ./run_pipeline.sh GSE73782_PC3_40kb TCGAprad_norm_prad # 02.07.2019
+# ./run_pipeline.sh GSE118514_RWPE1_40kb TCGAprad_norm_prad # 02.07.2019
+
+# GBM
+# ./run_pipeline.sh GSE105194_cerebellum_40kb TCGAgbm_classical_mesenchymal # 02.07.2019
+# ./run_pipeline.sh GSE105194_cerebellum_40kb TCGAgbm_classical_neural # 02.07.2019
+# ./run_pipeline.sh GSE105194_cerebellum_40kb TCGAgbm_classical_proneural # 02.07.2019
+# ./run_pipeline.sh GSE105194_cerebellum_40kb TCGAlgg_IDHwt_IDHmutnc # 02.07.2019
+
+# ./run_pipeline.sh GSE105194_spinal_cord_40kb TCGAgbm_classical_mesenchymal # 02.07.2019
+# ./run_pipeline.sh GSE105194_spinal_cord_40kb TCGAgbm_classical_neural # 02.07.2019
+# ./run_pipeline.sh GSE105194_spinal_cord_40kb TCGAgbm_classical_proneural # 02.07.2019
+# ./run_pipeline.sh GSE105194_spinal_cord_40kb TCGAlgg_IDHwt_IDHmutnc # 02.07.2019
+
+
+# COLORECTAL
+# ./run_pipeline.sh GSE105318_DLD1_40kb TCGAcoad_msi_mss # 02.07.2019
+
+# LYMPHOBLAST
+# ./run_pipeline.sh K562_40kb TCGAlaml_wt_mutFLT3 # 02.07.2019
+
+
+
+
 ######## #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### 
 
 
@@ -111,7 +142,6 @@
 # PROSTATE	
 # ./run_pipeline.sh ENCSR346DCU_LNCaP_40kb TCGAprad_norm_prad # 10.06.2019
 # ./run_pipeline.sh GSE73782_PC3_40kb TCGAprad_norm_prad # 12.06.2019
-
 # ./run_pipeline.sh GSE118514_RWPE1_40kb TCGAprad_norm_prad # ADDED 20.06.2019
 
 # GBM

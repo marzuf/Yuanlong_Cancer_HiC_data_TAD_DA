@@ -1,46 +1,46 @@
 
-
-setDir <- "/media/electron"
-load(file.path(setDir, "/mnt/ndata/Yuanlong/1.Projects/2.PROFILE/0.Scripts/Generate_TADs_for_Marie/bin_comp_CELL_LINEs_list.Rdata"))
-
-all_ds <- names(bin_comp_CELL_LINEs_list)
-all_ds <- all_ds[grepl("mega_", all_ds)]
-
-for(ds in all_ds) {
- cat("... ", ds, "\n") 
-  ref_chr <- 1
-  
-  currdt <- bin_comp_CELL_LINEs_list[[paste0(ds)]]
-
-  ref_ranks <- currdt$CD_rank[currdt$chr == ref_chr]
-  ref_idxs <- currdt$bin_index[currdt$chr == ref_chr]
-    
-  other_chr <- 2:22
-  
-  for(curr_chr in other_chr) {
-    cat("....... ", ds, " - ", curr_chr, "\n")   
-    curr_ranks <- currdt$CD_rank[currdt$chr == curr_chr]
-    curr_idxs <- currdt$bin_index[currdt$chr == curr_chr]
-    
-    stopifnot(all(ref_ranks == curr_ranks))
-    stopifnot(all(ref_idxs == curr_idxs))
-    # break
-  }
-  # break
-}
-
-currdt <- bin_comp_CELL_LINEs_list[["mega_ENCSR079VIJ_G401"]]
-
-currdt <- bin_comp_CELL_LINEs_list[["mega_ENCSR549MGQ_T47D"]]
-
-currdt_1 <- currdt[currdt$chr == 1,]
-stopifnot(nrow(currdt_1) > 0)
-
-currdt_21 <- currdt[currdt$chr == 21,]
-stopifnot(nrow(currdt_21) > 0)
-
-all(currdt_1$CD_rank == currdt_21$CD_rank)
-all(currdt_1$index == currdt_21$bin_index)
+# ISSUE WITH THE WRONG DATA -> for a given dataset, all chromosomes were the same
+# setDir <- "/media/electron"
+# load(file.path(setDir, "/mnt/ndata/Yuanlong/1.Projects/2.PROFILE/0.Scripts/Generate_TADs_for_Marie/bin_comp_CELL_LINEs_list.Rdata"))
+# 
+# all_ds <- names(bin_comp_CELL_LINEs_list)
+# all_ds <- all_ds[grepl("mega_", all_ds)]
+# 
+# for(ds in all_ds) {
+#  cat("... ", ds, "\n") 
+#   ref_chr <- 1
+#   
+#   currdt <- bin_comp_CELL_LINEs_list[[paste0(ds)]]
+# 
+#   ref_ranks <- currdt$CD_rank[currdt$chr == ref_chr]
+#   ref_idxs <- currdt$bin_index[currdt$chr == ref_chr]
+#     
+#   other_chr <- 2:22
+#   
+#   for(curr_chr in other_chr) {
+#     cat("....... ", ds, " - ", curr_chr, "\n")   
+#     curr_ranks <- currdt$CD_rank[currdt$chr == curr_chr]
+#     curr_idxs <- currdt$bin_index[currdt$chr == curr_chr]
+#     
+#     stopifnot(all(ref_ranks == curr_ranks))
+#     stopifnot(all(ref_idxs == curr_idxs))
+#     # break
+#   }
+#   # break
+# }
+# 
+# currdt <- bin_comp_CELL_LINEs_list[["mega_ENCSR079VIJ_G401"]]
+# 
+# currdt <- bin_comp_CELL_LINEs_list[["mega_ENCSR549MGQ_T47D"]]
+# 
+# currdt_1 <- currdt[currdt$chr == 1,]
+# stopifnot(nrow(currdt_1) > 0)
+# 
+# currdt_21 <- currdt[currdt$chr == 21,]
+# stopifnot(nrow(currdt_21) > 0)
+# 
+# all(currdt_1$CD_rank == currdt_21$CD_rank)
+# all(currdt_1$index == currdt_21$bin_index)
 
 
 
@@ -49,6 +49,9 @@ all(currdt_1$index == currdt_21$bin_index)
 
 require(foreach)
 require(doMC)
+require(ggplot2)
+require(hrbrthemes)
+require(ggthemes)
 startTime <- Sys.time()
 
 script_name <- "check_YL_TADs.R"
@@ -58,7 +61,7 @@ cat("> START ", script_name, "\n")
 outFold <- "CHECK_YL_TADS"
 dir.create(outFold)
 
-buildData <- TRUE
+buildData <- FALSE
 
 SSHFS <- FALSE
 setDir <- ifelse(SSHFS, "/media/electron", "")
@@ -68,6 +71,9 @@ registerDoMC(ifelse(SSHFS, 2, 40))
 binKb <- 40
 
 tdFolder <- file.path("..", "Cancer_HiC_data_TAD_DA")
+
+plotType <- "png"
+myHeight <- myWidth <- 7
 
 ### PREP YL data
 ylData_file <- file.path(setDir, "/mnt/ndata/Yuanlong/1.Projects/2.PROFILE/0.Scripts/Generate_TADs_for_Marie/bin_comp_CELL_LINEs_list.Rdata")
@@ -357,7 +363,129 @@ if(buildData) {
 
 #################################################################################################################### START PLOTING
 
+# plot the different variables to compare YL and TD
 
+# rehsape dataframe
+# xx <- all_ds_TAD_DT[1:10,c("hicds", "chromo", "nAssignedBound_YL", "nAssignedBound_TD")]
+# reshape(xx, ids = c("hicds", "chromo"), times = c("nAssignedBound_YL", "nAssignedBound_TD"), 
+#           timevar = "feature", direction="long", varying=list(c("nAssignedBound_YL", "nAssignedBound_TD")),
+#         idvar=c("hicds", "chromo"), v.names=c("nAssigned"))
+# 
+# 
+# xx <- all_ds_TAD_DT[1:10,c("hicds", "chromo", "nAssignedBound_YL", "nAssignedBound_TD", "missingBins_YL", "missingBins_TD")]
+# reshape(xx, ids = c("hicds", "chromo"), times = c("nAssignedBound_YL", "nAssignedBound_TD", "missingBins_YL", "missingBins_TD" ), 
+#         timevar = "feature", direction="long", 
+#         varying=list(c("nAssignedBound_YL", "nAssignedBound_TD",  "missingBins_YL", "missingBins_TD")),
+#         idvar=c("hicds", "chromo"), v.names=c("nbr"))
+# 
+# 
+# all_vars <- colnames(all_ds_TAD_DT)[! colnames(all_ds_TAD_DT) %in% c("hicds", "chromo")]
+# 
+# xx <- all_ds_TAD_DT[1:10,]
+# 
+# yy <- reshape(xx, 
+#         ids = c("hicds", "chromo"), idvar = c("hicds", "chromo"),
+#         times = all_vars,
+#         timevar = "feature",
+#         direction = "long",
+#         v.names="nbr",
+#         varying = list(all_vars)
+#         )
+# unique(yy$feature)
+
+
+
+idVars <- c("hicds", "chromo")
+varVars <- colnames(all_ds_TAD_DT)[! colnames(all_ds_TAD_DT) %in% c("hicds", "chromo")]
+
+reshaped_DT <- reshape(all_ds_TAD_DT, 
+                       ids = idVars, 
+                       idvar = idVars,
+                       times = varVars, 
+                       timevar = "feature", # name of the new column that contains the category
+                       direction = "long",
+                       v.names="nbr", # name of the new column that contains the values
+                       varying = list(varVars))
+
+unique(reshaped_DT$feature)
+
+reshaped_DT$featureName <- gsub("(.+)_.+", "\\1", reshaped_DT$feature)
+reshaped_DT$featureDataset <- gsub(".+_(.+)", "\\1", reshaped_DT$feature)
+
+plotList <- list(
+  c("nAssignedBound", "nAssignedTAD"),
+  c("missingBins", "nBinsCovered"),
+  c("nGenesBound", "nGenesTAD"),
+  c("meanSizeTAD", "medianSizeTAD")
+                 )
+
+for(toplot_vars in plotList) {
+  
+  if( all(toplot_vars == c("nAssignedBound", "nAssignedTAD")) | all(toplot_vars ==  c("nGenesBound", "nGenesTAD"))) {
+    myylab <- "# genes"
+  } else if(all(toplot_vars ==  c("meanSizeTAD", "medianSizeTAD"))) {
+    myylab <- "TAD size (bp)"
+  } else if(all(toplot_vars == c("missingBins", "nBinsCovered"))) {
+    myylab <- "# bins"
+  } else {
+    myylab <- NA
+  }
+  stopifnot(!is.na(myylab))
+  
+  sub_DT <- reshaped_DT[reshaped_DT$featureName %in% toplot_vars,]
+  stopifnot(nrow(sub_DT) > 0)
+  
+  nDS <- length(unique(sub_DT$hicds))
+
+  
+  outFile <- file.path(outFold, paste0(paste0(toplot_vars, collapse = "_"), "_YL_TD_boxplot.", plotType))
+  p <- ggplot(sub_DT, aes(x = featureName, y= nbr, fill = featureDataset, col=featureDataset))  +
+    geom_boxplot()+
+    scale_fill_ipsum() +
+    scale_color_ipsum() +
+    theme_ipsum_rc(grid="XY", axis_title_just="c", axis_title_size=14) + 
+    labs(x="", 
+         y=paste0(myylab),
+         title="Comparison YL vs. TopDom TADs",
+         # caption="Brought to you by the letter 'g'",
+         subtitle=paste0("nDS = ", nDS),
+         colour = "",
+         fill = ""
+         ) 
+  ggsave(p, filename = outFile, height = myHeight, width = myWidth)
+  cat(paste0("... written: ", outFile, "\n"))
+    
+  # THEMES FROM hrbrthemes package
+  # theme_ft_rc(grid="XY", axis_title_just="c") # dark
+  # theme_ipsum(grid="XY", axis_title_just="c")
+  #theme_ipsum_ps(grid="XY", axis_title_just="c") !
+  # theme_ipsum_pub(grid="XY", axis_title_just="c")
+  # theme_ipsum_tw(grid="XY", axis_title_just="c")
+  # theme_modern_rc(grid="XY", axis_title_just="c") # dark
+  
+  # THEMES FROM ggthemes package
+  # theme_base()
+  # theme_calc()
+  # theme_economist()  # colored
+  # theme_economist_white() # colored bg
+  # theme_excel() # colored bg
+  # theme_few()# colored bg
+  # theme_fivethirtyeight()# colored bg
+  # theme_foundation()
+  # theme_gdocs()   
+  # theme_hc()
+  # theme_igray()# colored bg
+  # theme_map    ()        
+  # theme_pander()
+  # theme_par()
+  # theme_solarized()      # colored bg
+  # theme_solarized_2() # colored bg
+  # theme_solid()
+  # theme_stata()       
+  # theme_tufte() # nice font !
+  
+  
+}
 
 # ######################################################################################
 # ######################################################################################

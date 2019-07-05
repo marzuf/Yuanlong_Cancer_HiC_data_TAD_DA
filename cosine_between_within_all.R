@@ -1,4 +1,6 @@
 
+stop("use instead the script cosine_between_within_all_diag1.R\n")
+
 # Rscript cosine_between_within_all.R
 
 script_name <- "cosine_between_within_all.R"
