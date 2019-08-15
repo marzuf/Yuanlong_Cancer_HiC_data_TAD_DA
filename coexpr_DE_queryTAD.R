@@ -242,6 +242,44 @@ tad_coexpr_fc_DT$withinCoexpr_meanFC_avgRank <- (tad_coexpr_fc_DT$withinCoexpr_r
 
 
 
+myx = tad_coexpr_fc_DT$ratioDown
+myy = tad_coexpr_fc_DT$meanFC_rank
+
+
+outFile <- file.path(outFolder, paste0("meanFCrank", "_vs_", "ratioDown_densplot.", plotType ))
+do.call(plotType, list(outFile, height=myHeight, width=myWidth))
+densplot(
+    y = myy,
+    x = myx,
+    cex.lab=myCexLab,
+    cex.axis=myCexAxis,
+    ylab="meanFC rank",
+    xlab = "ratioDown",
+    cex = 0.5,
+    main = paste0("meanFCrank vs ratioDown")
+)
+foo <- dev.off()
+cat("... written: ", outFile, "\n")
+
+myx = tad_coexpr_fc_DT$ratioDown
+myy <- tad_coexpr_fc_DT$withinCoexpr_rank
+outFile <- file.path(outFolder, paste0("withinCoexprRank", "_vs_", "ratioDown_densplot.", plotType ))
+do.call(plotType, list(outFile, height=myHeight, width=myWidth))
+densplot(
+    y = myy,
+    x = myx,
+    cex.lab=myCexLab,
+    cex.axis=myCexAxis,
+    ylab="withinCoexpr rank",
+    xlab = "ratioDown",
+    cex = 0.5,
+    main = paste0("withinCoexprRank vs ratioDown")
+)
+foo <- dev.off()
+cat("... written: ", outFile, "\n")
+
+
+stop("--ok\n")
 
 
 #################################################################
